@@ -68,6 +68,13 @@ class TimerService: Service(), SensorEventListener {
                     Thread.sleep(1000);
                     maxInaccuracy=Math.max(maxInaccuracy,Math.abs((System.currentTimeMillis()-start)-1000));
                     timeRemainingMs= timeRemainingMs- (System.currentTimeMillis() - start);
+                    if(timeRemainingMs<=1000 && !sensorsActive){
+                        sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+                        sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+                        sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+                        sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
+                        sensorsActive=true;
+                    }
                     if (timeRemainingMs <= 0) {
                         isBreakPeriod = !isBreakPeriod;
                         if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||!keyguardManager.isKeyguardLocked)
@@ -87,13 +94,6 @@ class TimerService: Service(), SensorEventListener {
                             timeRemainingMs = breakTimeSeconds*1000
                         else
                             timeRemainingMs = pomodoroTimeSeconds*1000
-                    }
-                    if(timeRemainingMs<=1000 && !sensorsActive){
-                        sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-                        sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
-                        sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
-                        sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
-                        sensorsActive=true;
                     }
                     startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) "\nTake a break" else "\nFocus on job\nMax inaccuracy: "+maxInaccuracy+"\nMissed sensor input: "+missedSensorInput)));
                     serviceActive=true;
