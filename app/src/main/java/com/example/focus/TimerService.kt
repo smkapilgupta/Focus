@@ -62,10 +62,11 @@ class TimerService: Service(), SensorEventListener {
         thread = Thread(Runnable {
             try {
                 var maxInaccuracy:Long=0;
+                var missedSensorInput:Boolean=false;
                 while (true) {
                     val start=System.currentTimeMillis();
                     Thread.sleep(1000);
-                    maxInaccuracy=Math.max(maxInaccuracy,1000-(System.currentTimeMillis()-start));
+                    maxInaccuracy=Math.max(maxInaccuracy,Math.abs((System.currentTimeMillis()-start)-1000));
                     timeRemainingMs= timeRemainingMs- (System.currentTimeMillis() - start);
                     if (timeRemainingMs <= 0) {
                         isBreakPeriod = !isBreakPeriod;
@@ -76,6 +77,9 @@ class TimerService: Service(), SensorEventListener {
                         if(sensorsActive) {
                             sensorManager.unregisterListener(this)
                             sensorsActive = false;
+                        }
+                        else{
+                            missedSensorInput=true;
                         }
                         vibrator.cancel();
                         vibrator.vibrate(combinedVibrationEffect)
@@ -91,7 +95,7 @@ class TimerService: Service(), SensorEventListener {
                         sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
                         sensorsActive=true;
                     }
-                    startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) "\nTake a break" else "\nFocus on job\nMax inaccuracy: "+maxInaccuracy)));
+                    startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) "\nTake a break" else "\nFocus on job\nMax inaccuracy: "+maxInaccuracy+"\nMissed sensor input: "+missedSensorInput)));
                     serviceActive=true;
                 }
             }
