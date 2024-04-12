@@ -28,7 +28,14 @@ class TimerService: Service(), SensorEventListener {
     private lateinit var vibrator: VibratorManager
     private lateinit var sensorManager: SensorManager
     private lateinit var keyguardManager: KeyguardManager
-
+    private var maxInaccuracy: Long=0
+    private var missedSensorInput:Boolean=false;
+    private lateinit var accelerometer:Sensor
+    private lateinit var magnetometer:Sensor
+    private lateinit var lightSensor:Sensor
+    private lateinit var proxitySensor:Sensor
+    private lateinit var combinedVibrationEffect:CombinedVibration
+    private var startId:Int=0
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
         public var breakTimeSeconds= Constants.breakTimeSeconds;
@@ -51,53 +58,18 @@ class TimerService: Service(), SensorEventListener {
         vibrator = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
         val vibrationEffect1 =
             VibrationEffect.createOneShot(2000, VibrationEffect.DEFAULT_AMPLITUDE)
-        val combinedVibrationEffect=CombinedVibration.createParallel(vibrationEffect1);
+        combinedVibrationEffect=CombinedVibration.createParallel(vibrationEffect1);
         keyguardManager=getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager;
-        var accelerometer:Sensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) as Sensor;
-        var magnetometer:Sensor = sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) as Sensor;
-        var proxitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_PROXIMITY) as Sensor;
-        var lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
-
+        accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) as Sensor;
+        magnetometer = sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) as Sensor;
+        proxitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_PROXIMITY) as Sensor;
+        lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
+        this.startId=startId
         thread = Thread(Runnable {
             try {
-                var maxInaccuracy:Long=0;
-                var missedSensorInput:Boolean=false;
                 while (true) {
-                    val start=System.currentTimeMillis();
-                    Thread.sleep(1000);
-                    maxInaccuracy=Math.max(maxInaccuracy,Math.abs((System.currentTimeMillis()-start)-1000));
-                    timeRemainingMs= timeRemainingMs- (System.currentTimeMillis() - start);
-                    if(timeRemainingMs<=1000 && !sensorsActive){
-                        sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-                        sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
-                        sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
-                        sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
-                        sensorsActive=true;
-                    }
-                    if (timeRemainingMs <= 0) {
-                        isBreakPeriod = !isBreakPeriod;
-                        if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
-                                orientation)||!keyguardManager.isKeyguardLocked)
-                            startPlayer(mediaQuite);
-                        else
-                            startPlayer(mediaLoud);
-                        if(sensorsActive) {
-                            sensorManager.unregisterListener(this)
-                            sensorsActive = false;
-                        }
-                        else{
-                            missedSensorInput=true;
-                        }
-                        vibrator.cancel();
-                        vibrator.vibrate(combinedVibrationEffect)
-                        if (isBreakPeriod)
-                            timeRemainingMs = breakTimeSeconds*1000
-                        else
-                            timeRemainingMs = pomodoroTimeSeconds*1000
-                    }
-                    startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) "\nTake a break" else "\nFocus on job\nMax inaccuracy: "+maxInaccuracy+"\nMissed sensor input: "+missedSensorInput)));
-                    serviceActive=true;
+                    onPulse();
                 }
             }
             catch (_:InterruptedException){
@@ -107,6 +79,42 @@ class TimerService: Service(), SensorEventListener {
         thread!!.start();
 
         return START_STICKY
+    }
+    fun onPulse(){
+        val start=System.currentTimeMillis();
+        Thread.sleep(1000);
+        maxInaccuracy=Math.max(maxInaccuracy,Math.abs((System.currentTimeMillis()-start)-1000));
+        timeRemainingMs= timeRemainingMs- (System.currentTimeMillis() - start);
+        if (timeRemainingMs <= 0) {
+            isBreakPeriod = !isBreakPeriod;
+            if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
+                    orientation)||!keyguardManager.isKeyguardLocked)
+                startPlayer(mediaQuite);
+            else
+                startPlayer(mediaLoud);
+            if(sensorsActive) {
+                sensorManager.unregisterListener(this)
+                sensorsActive = false;
+            }
+            else{
+                missedSensorInput=true;
+            }
+            vibrator.cancel();
+            vibrator.vibrate(combinedVibrationEffect)
+            if (isBreakPeriod)
+                timeRemainingMs = breakTimeSeconds*1000
+            else
+                timeRemainingMs = pomodoroTimeSeconds*1000
+        }
+        if(timeRemainingMs<=2000 && !sensorsActive){
+            sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorsActive=true;
+        }
+        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) "\nTake a break" else "\nFocus on job\nMax inaccuracy: "+maxInaccuracy+"\nMissed sensor input: "+missedSensorInput)));
+        serviceActive=true;
     }
 
     override fun onDestroy() {
