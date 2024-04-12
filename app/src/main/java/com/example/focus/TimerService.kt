@@ -77,7 +77,8 @@ class TimerService: Service(), SensorEventListener {
                     }
                     if (timeRemainingMs <= 0) {
                         isBreakPeriod = !isBreakPeriod;
-                        if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||!keyguardManager.isKeyguardLocked)
+                        if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
+                                orientation)||!keyguardManager.isKeyguardLocked)
                             startPlayer(mediaQuite);
                         else
                             startPlayer(mediaLoud);
