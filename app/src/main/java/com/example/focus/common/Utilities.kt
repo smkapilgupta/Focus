@@ -1,0 +1,53 @@
+package com.example.focus.common
+
+
+class Utilities {
+    companion object {
+        public fun formatTimeFromSeconds(timeSeconds: Long): String {
+            val minutes = timeSeconds / 60;
+            val seconds = timeSeconds % 60;
+
+            return (if (minutes<10) "0".plus(minutes) else minutes.toString()).plus(" : ").plus(if (seconds<10) "0".plus(seconds) else seconds.toString());
+        }
+
+        public fun isInsidePocket(orientation: FloatArray,lightSensorReading: Float,proximitySensorReading: Float):Boolean{
+            return !isOnHorizontalSurface(orientation)&&isSomethingCoveringScreen(lightSensorReading,proximitySensorReading);
+        }
+        public fun isMoving(accelerometerReading: FloatArray):Boolean{
+            val Ax: Float = accelerometerReading.get(0)
+            val Ay: Float = accelerometerReading.get(1)
+            val Az: Float = accelerometerReading.get(2)
+
+            val normsqA = Ax * Ax + Ay * Ay + Az * Az
+            val g = 9.81f
+            val freeFallGravitySquared = g * g
+
+            return Math.abs(normsqA-freeFallGravitySquared)>1
+        }
+        public fun isOnHorizontalSurface(orientation: FloatArray):Boolean{
+            return Math.abs(orientation.get(2))>172||return Math.abs(orientation.get(2))<8;
+        }
+        public fun isFacingDown(orientation: FloatArray):Boolean{
+            return Math.abs(orientation.get(2))>150;
+        }
+        public fun isFacingUp(orientation: FloatArray):Boolean{
+            return Math.abs(orientation.get(2))<30;
+        }
+        public fun isVertical(accelerometer:Array<Float>):Boolean{
+            return false;
+        }
+        public fun isDark(lightSensorReading: Float):Boolean{
+            return lightSensorReading<10
+        }
+        public fun isSomethingCoveringScreen(lightSensorReading:Float, proximitySensorReading:Float):Boolean{
+            if(isDark(lightSensorReading) && proximitySensorReading<5)
+                return true;
+            return false;
+        }
+        public fun convertRadianOrientationToDegree(orientation:FloatArray){
+            orientation.set(0, (orientation.get(0)*180/Constants.pi).toFloat());
+            orientation.set(1, (orientation.get(1)*180/Constants.pi).toFloat());
+            orientation.set(2, (orientation.get(2)*180/Constants.pi).toFloat());
+        }
+    }
+}
