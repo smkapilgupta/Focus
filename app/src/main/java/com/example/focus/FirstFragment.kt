@@ -3,6 +3,8 @@ package com.example.focus
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -11,7 +13,6 @@ import androidx.navigation.fragment.findNavController
 import com.example.focus.common.Constants
 import com.example.focus.common.Utilities
 import com.example.focus.databinding.FragmentFirstBinding
-import java.util.Timer
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -19,6 +20,8 @@ import java.util.Timer
 class FirstFragment : Fragment() {
 
     private var _binding: FragmentFirstBinding? = null
+    private var handler: Handler? = null
+    private lateinit var runnable: Runnable
 
     private val binding get() = _binding!!
 
@@ -69,11 +72,24 @@ class FirstFragment : Fragment() {
             this.activity?.stopService(Intent(this.activity, TimerService::class.java));
             updateUx(false);
         }
+        handler = Handler(Looper.getMainLooper());
+        runnable= Runnable { onPulse() }
+    }
+
+    fun onPulse() {
+        updateUx(TimerService.isLooperThreadAlive());
+        handler?.postDelayed(runnable!!,Constants.pulseMs);
     }
 
     override fun onResume() {
         super.onResume()
+        handler?.post(runnable!!);
         updateUx(TimerService.isLooperThreadAlive());
+    }
+
+    override fun onPause() {
+        super.onPause()
+        handler?.removeCallbacks(runnable!!);
     }
 
     fun updateUx(running: Boolean){
