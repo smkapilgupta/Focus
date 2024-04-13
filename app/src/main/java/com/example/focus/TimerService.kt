@@ -20,6 +20,8 @@ import androidx.core.app.NotificationCompat
 import com.example.focus.common.Constants
 import com.example.focus.common.Utilities
 import com.example.focus.common.Utilities.Companion.formatTimeFromSeconds
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 
 class TimerService: Service(), SensorEventListener {
@@ -36,12 +38,14 @@ class TimerService: Service(), SensorEventListener {
     private lateinit var proxitySensor:Sensor
     private lateinit var combinedVibrationEffect:CombinedVibration
     private var startId:Int=0
+    private var lastTimestamp:Long=0;
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
         public var breakTimeSeconds= Constants.breakTimeSeconds;
         public var isBreakPeriod=false;
         public var timeRemainingMs:Long=Constants.pomodoroTimeSeconds*1000;
         public var thread: Thread? =null;
+        public var scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor?=null;
         public var serviceActive: Boolean = false;
         public var sensorsActive: Boolean = false;
         public var proximitySensorReading: Float = 0.0F;
@@ -66,25 +70,15 @@ class TimerService: Service(), SensorEventListener {
         proxitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_PROXIMITY) as Sensor;
         lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
         this.startId=startId
-        thread = Thread(Runnable {
-            try {
-                while (true) {
-                    onPulse();
-                }
-            }
-            catch (_:InterruptedException){
-
-            }
-        });
-        thread!!.start();
-
+        scheduledThreadPoolExecutor=ScheduledThreadPoolExecutor(1);
+        lastTimestamp=System.currentTimeMillis();
+        scheduledThreadPoolExecutor!!.scheduleWithFixedDelay({onPulse()},Constants.pulseMs,Constants.pulseMs,TimeUnit.MILLISECONDS);
         return START_STICKY
     }
     fun onPulse(){
-        val start=System.currentTimeMillis();
-        Thread.sleep(1000);
-        maxInaccuracy=Math.max(maxInaccuracy,Math.abs((System.currentTimeMillis()-start)-1000));
-        timeRemainingMs= timeRemainingMs- (System.currentTimeMillis() - start);
+        maxInaccuracy=Math.max(maxInaccuracy,Math.abs((System.currentTimeMillis()-lastTimestamp)-Constants.pulseMs));
+        timeRemainingMs= timeRemainingMs- (System.currentTimeMillis() - lastTimestamp);
+        lastTimestamp=System.currentTimeMillis();
         if (timeRemainingMs <= 0) {
             isBreakPeriod = !isBreakPeriod;
             if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
@@ -106,7 +100,7 @@ class TimerService: Service(), SensorEventListener {
             else
                 timeRemainingMs = pomodoroTimeSeconds*1000
         }
-        if(timeRemainingMs<=2000 && !sensorsActive){
+        if(timeRemainingMs<=2*Constants.pulseMs && !sensorsActive){
             sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);

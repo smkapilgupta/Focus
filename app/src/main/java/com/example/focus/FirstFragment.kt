@@ -39,8 +39,8 @@ class FirstFragment : Fragment() {
         }
 
         binding.start.setOnClickListener {
-            if(TimerService.thread?.isAlive==true){
-                TimerService.thread?.interrupt();
+            if(TimerService.scheduledThreadPoolExecutor?.isShutdown==false){
+                TimerService.scheduledThreadPoolExecutor?.shutdown();
                 TimerService.pomodoroTimeSeconds = Constants.pomodoroTimeSeconds
                 TimerService.breakTimeSeconds = Constants.breakTimeSeconds
                 if(TimerService.serviceActive) {
@@ -61,7 +61,7 @@ class FirstFragment : Fragment() {
             }
         }
         binding.stop.setOnClickListener {
-            TimerService.thread?.interrupt();
+            TimerService.scheduledThreadPoolExecutor?.shutdown();
             TimerService.pomodoroTimeSeconds = Constants.pomodoroTimeSeconds
             TimerService.timeRemainingMs = TimerService.pomodoroTimeSeconds*1000;
             TimerService.isBreakPeriod = false
