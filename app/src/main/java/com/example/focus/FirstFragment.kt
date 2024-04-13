@@ -78,7 +78,7 @@ class FirstFragment : Fragment() {
 
     fun onPulse() {
         updateUx(TimerService.isLooperThreadAlive());
-        handler?.postDelayed(runnable!!,Constants.pulseMs);
+        handler?.postDelayed(runnable!!,Constants.uiUpdatePeriodMs);
     }
 
     override fun onResume() {

@@ -23,10 +23,9 @@ import com.example.focus.common.Constants
 import com.example.focus.common.Utilities
 import com.example.focus.common.Utilities.Companion.formatTimeFromSeconds
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 
-class TimerService: Service(), SensorEventListener, Runnable {
+class TimerService: Service(), SensorEventListener {
     private lateinit var mediaLoud: MediaPlayer
     private lateinit var mediaQuite: MediaPlayer
     private lateinit var vibrator: VibratorManager
@@ -57,14 +56,21 @@ class TimerService: Service(), SensorEventListener, Runnable {
         public var accelerometerReading: FloatArray=FloatArray(3)
         public var magnetometerReading: FloatArray= FloatArray(3)
         public var orientation: FloatArray= FloatArray(3)
+        private var runnable: Runnable? =null;
 
         public fun isLooperThreadAlive():Boolean{
-            return thread?.isAlive==true;
+//            return thread?.isAlive==true;
+//            return scheduledThreadPoolExecutor?.isShutdown==false
+            if(runnable!=null)
+                return handler?.hasCallbacks(runnable!!)==true;
+            return false;
         }
         public fun shutDownLooperThread(){
-            thread?.interrupt()
+//            thread?.interrupt()
+//            TimerService.scheduledThreadPoolExecutor?.shutdown();
+            if(runnable!=null)
+                handler?.removeCallbacks(runnable!!);
         }
-
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -83,12 +89,13 @@ class TimerService: Service(), SensorEventListener, Runnable {
         lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
         this.startId=startId
         scheduledThreadPoolExecutor=ScheduledThreadPoolExecutor(1);
+        runnable= Runnable { onPulse() }
         handler = Handler(Looper.getMainLooper());
-        handler!!.postDelayed(this,Constants.pulseMs)
+        handler!!.postDelayed(runnable!!,Constants.pulseMs)
         lastTimestamp=System.currentTimeMillis();
         return START_STICKY
     }
-    override fun run(){
+    fun onPulse(){
         val start=System.currentTimeMillis();
         maxInaccuracy=Math.max(maxInaccuracy,Math.abs((System.currentTimeMillis()-lastTimestamp)-Constants.pulseMs));
         timeRemainingMs= timeRemainingMs- (System.currentTimeMillis() - lastTimestamp);
@@ -125,7 +132,7 @@ class TimerService: Service(), SensorEventListener, Runnable {
         serviceActive=true;
         val processingDelay=System.currentTimeMillis()-start;
         maxProcessingDelay=Math.max(maxProcessingDelay,processingDelay)
-        handler?.postDelayed(this,Math.max(0,Constants.pulseMs-processingDelay));
+        handler?.postDelayed(runnable!!,Math.max(0,Constants.pulseMs-processingDelay));
     }
 
     override fun onDestroy() {
