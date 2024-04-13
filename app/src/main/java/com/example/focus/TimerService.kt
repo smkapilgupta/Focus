@@ -33,7 +33,6 @@ class TimerService: Service(), SensorEventListener {
     private lateinit var keyguardManager: KeyguardManager
     private var maxInaccuracy: Long=0
     private var maxProcessingDelay: Long=0
-    private var missedSensorInput:Boolean=false;
     private lateinit var accelerometer:Sensor
     private lateinit var magnetometer:Sensor
     private lateinit var lightSensor:Sensor
@@ -42,6 +41,11 @@ class TimerService: Service(), SensorEventListener {
     private var startId:Int=0
     private var lastTimestamp:Long=0;
     private var startTime:Long=0;
+    private var accelerometerReadingDone:Boolean=false;
+    private var magnetometerReadingDone:Boolean=false;
+    private var lightSensorReadingDone:Boolean=false;
+    private var proximitySensorReadingDone:Boolean=false;
+
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
         public var breakTimeSeconds= Constants.breakTimeSeconds;
@@ -95,6 +99,7 @@ class TimerService: Service(), SensorEventListener {
         schedulePulses();
         return START_STICKY
     }
+
     fun schedulePulses(){
         lastTimestamp=System.currentTimeMillis();
         startTime=lastTimestamp
@@ -107,6 +112,7 @@ class TimerService: Service(), SensorEventListener {
         for (i in 0..pulses+1){
             handler!!.postDelayed(runnable!!,i*Constants.pulseMs);
         }
+        sensorManager.unregisterListener(this)
     }
 
     fun getInaccuracy():Long{
@@ -128,42 +134,44 @@ class TimerService: Service(), SensorEventListener {
         lastTimestamp=System.currentTimeMillis();
         if (timeRemainingMs <= 0) {
             isBreakPeriod = !isBreakPeriod;
-            if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
-                    orientation)||!keyguardManager.isKeyguardLocked)
-                startPlayer(mediaQuite);
-            else
-                startPlayer(mediaLoud);
-            if(sensorsActive) {
-                sensorManager.unregisterListener(this)
-                sensorsActive = false;
-            }
-            else{
-                missedSensorInput=true;
-            }
-            vibrator.cancel();
-            vibrator.vibrate(combinedVibrationEffect)
+            Thread{recordSensorsAndPlay()}.start();
             if (isBreakPeriod)
                 timeRemainingMs = breakTimeSeconds*1000
             else
                 timeRemainingMs = pomodoroTimeSeconds*1000
             schedulePulses();
         }
-        if(timeRemainingMs<=2*Constants.pulseMs && !sensorsActive){
-            sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorsActive=true;
-        }
-        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nMax inaccuracy: "+maxInaccuracy+"ms\nMissed sensor input: "+missedSensorInput+"\nMax processing delay: "+maxProcessingDelay+"ms ")));
+        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nMax inaccuracy: "+maxInaccuracy+"ms\nMax processing delay: "+maxProcessingDelay+"ms ")));
         serviceActive=true;
         val processingDelay=System.currentTimeMillis()-start;
         maxProcessingDelay=Math.max(maxProcessingDelay,processingDelay)
     }
 
+    fun recordSensorsAndPlay(){
+        accelerometerReadingDone=false;
+        magnetometerReadingDone=false;
+        lightSensorReadingDone=false;
+        proximitySensorReadingDone=false;
+        while(!accelerometerReadingDone||!magnetometerReadingDone||!lightSensorReadingDone||!proximitySensorReadingDone){
+            sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            println(""+accelerometerReadingDone+" "+magnetometerReadingDone+" "+lightSensorReadingDone+" "+proximitySensorReadingDone)
+        }
+        sensorManager.unregisterListener(this);
+        if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
+                orientation)||!keyguardManager.isKeyguardLocked)
+            startPlayer(mediaQuite);
+        else
+            startPlayer(mediaLoud);
+        vibrator.cancel();
+        vibrator.vibrate(combinedVibrationEffect)
+    }
+
     override fun onDestroy() {
-        serviceActive=false;
         super.onDestroy()
+        serviceActive=false;
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -206,19 +214,23 @@ class TimerService: Service(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         if(event?.sensor?.type==Sensor.TYPE_ACCELEROMETER) {
             accelerometerReading= event.values
+            accelerometerReadingDone=true
             println("accelerometer " +event.values.get(0)+" "+event.values.get(1)+" "+event.values.get(2))
 //            println("isMoving " +Utilities.isMoving(accelerometerReading));
         }
         if(event?.sensor?.type==Sensor.TYPE_MAGNETIC_FIELD) {
             magnetometerReading= event.values
+            magnetometerReadingDone=true
             println("magnetometer" +event.values.get(0)+" "+event.values.get(1)+" "+event.values.get(2))
         }
         if(event?.sensor?.type==Sensor.TYPE_PROXIMITY) {
             proximitySensorReading=event.values.get(0);
+            proximitySensorReadingDone=true
             println("proximity " +event.values.get(0))
         }
         if(event?.sensor?.type==Sensor.TYPE_LIGHT) {
             lightSensorReading=event.values.get(0);
+            lightSensorReadingDone=true
             println("light " +event.values.get(0))
         }
         val rotationMatrix = FloatArray(9)
@@ -226,7 +238,6 @@ class TimerService: Service(), SensorEventListener {
 
         SensorManager.getOrientation(rotationMatrix, orientation)
         Utilities.convertRadianOrientationToDegree(orientation);
-
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
