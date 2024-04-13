@@ -41,6 +41,7 @@ class TimerService: Service(), SensorEventListener {
     private lateinit var combinedVibrationEffect:CombinedVibration
     private var startId:Int=0
     private var lastTimestamp:Long=0;
+    private var startTime:Long=0;
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
         public var breakTimeSeconds= Constants.breakTimeSeconds;
@@ -91,14 +92,39 @@ class TimerService: Service(), SensorEventListener {
         scheduledThreadPoolExecutor=ScheduledThreadPoolExecutor(1);
         runnable= Runnable { onPulse() }
         handler = Handler(Looper.getMainLooper());
-        handler!!.postDelayed(runnable!!,Constants.pulseMs)
-        lastTimestamp=System.currentTimeMillis();
+        schedulePulses();
         return START_STICKY
     }
+    fun schedulePulses(){
+        lastTimestamp=System.currentTimeMillis();
+        startTime=lastTimestamp
+        handler!!.removeCallbacks(runnable!!);
+        var pulses:Long=0;
+        if(isBreakPeriod)
+            pulses= breakTimeSeconds;
+        else
+            pulses= pomodoroTimeSeconds;
+        for (i in 0..pulses+1){
+            handler!!.postDelayed(runnable!!,i*Constants.pulseMs);
+        }
+    }
+
+    fun getInaccuracy():Long{
+        if(lastTimestamp==startTime)
+            return 0;
+        return Math.abs((System.currentTimeMillis()-lastTimestamp)-Constants.pulseMs);
+    }
+
+    fun getTimeRemaining():Long{
+        if(isBreakPeriod)
+            return breakTimeSeconds*1000-(System.currentTimeMillis()-startTime);
+        return pomodoroTimeSeconds*1000-(System.currentTimeMillis()-startTime);
+    }
+
     fun onPulse(){
         val start=System.currentTimeMillis();
-        maxInaccuracy=Math.max(maxInaccuracy,Math.abs((System.currentTimeMillis()-lastTimestamp)-Constants.pulseMs));
-        timeRemainingMs= timeRemainingMs- (System.currentTimeMillis() - lastTimestamp);
+        maxInaccuracy=Math.max(getInaccuracy(),maxInaccuracy);
+        timeRemainingMs= getTimeRemaining()
         lastTimestamp=System.currentTimeMillis();
         if (timeRemainingMs <= 0) {
             isBreakPeriod = !isBreakPeriod;
@@ -120,6 +146,7 @@ class TimerService: Service(), SensorEventListener {
                 timeRemainingMs = breakTimeSeconds*1000
             else
                 timeRemainingMs = pomodoroTimeSeconds*1000
+            schedulePulses();
         }
         if(timeRemainingMs<=2*Constants.pulseMs && !sensorsActive){
             sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
@@ -128,11 +155,10 @@ class TimerService: Service(), SensorEventListener {
             sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
             sensorsActive=true;
         }
-        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) "\nTake a break" else "\nFocus on job\nMax inaccuracy: "+maxInaccuracy+"\nMissed sensor input: "+missedSensorInput+"\nMax processing delay: "+maxProcessingDelay)));
+        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nMax inaccuracy: "+maxInaccuracy+"ms\nMissed sensor input: "+missedSensorInput+"\nMax processing delay: "+maxProcessingDelay+"ms ")));
         serviceActive=true;
         val processingDelay=System.currentTimeMillis()-start;
         maxProcessingDelay=Math.max(maxProcessingDelay,processingDelay)
-        handler?.postDelayed(runnable!!,Math.max(0,Constants.pulseMs-processingDelay));
     }
 
     override fun onDestroy() {
