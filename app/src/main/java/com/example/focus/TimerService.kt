@@ -13,7 +13,9 @@ import android.hardware.SensorManager
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.CombinedVibration
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
@@ -24,13 +26,14 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 
-class TimerService: Service(), SensorEventListener {
+class TimerService: Service(), SensorEventListener, Runnable {
     private lateinit var mediaLoud: MediaPlayer
     private lateinit var mediaQuite: MediaPlayer
     private lateinit var vibrator: VibratorManager
     private lateinit var sensorManager: SensorManager
     private lateinit var keyguardManager: KeyguardManager
     private var maxInaccuracy: Long=0
+    private var maxProcessingDelay: Long=0
     private var missedSensorInput:Boolean=false;
     private lateinit var accelerometer:Sensor
     private lateinit var magnetometer:Sensor
@@ -46,6 +49,7 @@ class TimerService: Service(), SensorEventListener {
         public var timeRemainingMs:Long=Constants.pomodoroTimeSeconds*1000;
         public var thread: Thread? =null;
         public var scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor?=null;
+        public var handler: Handler?=null;
         public var serviceActive: Boolean = false;
         public var sensorsActive: Boolean = false;
         public var proximitySensorReading: Float = 0.0F;
@@ -53,6 +57,14 @@ class TimerService: Service(), SensorEventListener {
         public var accelerometerReading: FloatArray=FloatArray(3)
         public var magnetometerReading: FloatArray= FloatArray(3)
         public var orientation: FloatArray= FloatArray(3)
+
+        public fun isLooperThreadAlive():Boolean{
+            return thread?.isAlive==true;
+        }
+        public fun shutDownLooperThread(){
+            thread?.interrupt()
+        }
+
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -71,11 +83,13 @@ class TimerService: Service(), SensorEventListener {
         lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
         this.startId=startId
         scheduledThreadPoolExecutor=ScheduledThreadPoolExecutor(1);
+        handler = Handler(Looper.getMainLooper());
+        handler!!.postDelayed(this,Constants.pulseMs)
         lastTimestamp=System.currentTimeMillis();
-        scheduledThreadPoolExecutor!!.scheduleWithFixedDelay({onPulse()},Constants.pulseMs,Constants.pulseMs,TimeUnit.MILLISECONDS);
         return START_STICKY
     }
-    fun onPulse(){
+    override fun run(){
+        val start=System.currentTimeMillis();
         maxInaccuracy=Math.max(maxInaccuracy,Math.abs((System.currentTimeMillis()-lastTimestamp)-Constants.pulseMs));
         timeRemainingMs= timeRemainingMs- (System.currentTimeMillis() - lastTimestamp);
         lastTimestamp=System.currentTimeMillis();
@@ -107,8 +121,11 @@ class TimerService: Service(), SensorEventListener {
             sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
             sensorsActive=true;
         }
-        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) "\nTake a break" else "\nFocus on job\nMax inaccuracy: "+maxInaccuracy+"\nMissed sensor input: "+missedSensorInput)));
+        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) "\nTake a break" else "\nFocus on job\nMax inaccuracy: "+maxInaccuracy+"\nMissed sensor input: "+missedSensorInput+"\nMax processing delay: "+maxProcessingDelay)));
         serviceActive=true;
+        val processingDelay=System.currentTimeMillis()-start;
+        maxProcessingDelay=Math.max(maxProcessingDelay,processingDelay)
+        handler?.postDelayed(this,Math.max(0,Constants.pulseMs-processingDelay));
     }
 
     override fun onDestroy() {

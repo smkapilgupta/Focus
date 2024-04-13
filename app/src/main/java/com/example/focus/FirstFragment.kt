@@ -39,8 +39,8 @@ class FirstFragment : Fragment() {
         }
 
         binding.start.setOnClickListener {
-            if(TimerService.scheduledThreadPoolExecutor?.isShutdown==false){
-                TimerService.scheduledThreadPoolExecutor?.shutdown();
+            if(TimerService.isLooperThreadAlive()){
+                TimerService.shutDownLooperThread();
                 TimerService.pomodoroTimeSeconds = Constants.pomodoroTimeSeconds
                 TimerService.breakTimeSeconds = Constants.breakTimeSeconds
                 if(TimerService.serviceActive) {
@@ -61,7 +61,7 @@ class FirstFragment : Fragment() {
             }
         }
         binding.stop.setOnClickListener {
-            TimerService.scheduledThreadPoolExecutor?.shutdown();
+            TimerService.shutDownLooperThread();
             TimerService.pomodoroTimeSeconds = Constants.pomodoroTimeSeconds
             TimerService.timeRemainingMs = TimerService.pomodoroTimeSeconds*1000;
             TimerService.isBreakPeriod = false
@@ -73,12 +73,12 @@ class FirstFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        updateUx(TimerService.thread?.isAlive == true);
+        updateUx(TimerService.isLooperThreadAlive());
     }
 
     fun updateUx(running: Boolean){
         binding.timer.setText(Utilities.formatTimeFromSeconds(TimerService.timeRemainingMs/1000));
-        if(TimerService.thread?.isAlive == true || running)
+        if(TimerService.isLooperThreadAlive() || running)
             binding.start.setImageResource(R.mipmap.pause_icon)
         else
             binding.start.setImageResource(R.mipmap.play_icon)
