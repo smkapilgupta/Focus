@@ -11,7 +11,9 @@ class Utilities {
         }
 
         public fun isInsidePocket(orientation: FloatArray,lightSensorReading: Float,proximitySensorReading: Float):Boolean{
-            return !isOnHorizontalSurface(orientation)&&isSomethingCoveringScreen(lightSensorReading,proximitySensorReading);
+            val res=!isOnHorizontalSurface(orientation)&&isSomethingCoveringScreen(lightSensorReading,proximitySensorReading)
+            println("isInsidePocket: "+res);
+            return res;
         }
         public fun isMoving(accelerometerReading: FloatArray):Boolean{
             val Ax: Float = accelerometerReading.get(0)
@@ -25,10 +27,14 @@ class Utilities {
             return Math.abs(normsqA-freeFallGravitySquared)>1
         }
         public fun isOnHorizontalSurface(orientation: FloatArray):Boolean{
-            return Math.abs(orientation.get(2))>172||return Math.abs(orientation.get(2))<8;
+            val res=Math.abs(orientation.get(2))>172||return Math.abs(orientation.get(2))<8
+            println("isOnHorizontalSurface: "+res);
+            return res;
         }
         public fun isFacingDown(orientation: FloatArray):Boolean{
-            return Math.abs(orientation.get(2))>150;
+            val res=Math.abs(orientation.get(2))>150
+            println("isFacingDown: "+res);
+            return res
         }
         public fun isFacingUp(orientation: FloatArray):Boolean{
             return Math.abs(orientation.get(2))<30;
@@ -37,12 +43,14 @@ class Utilities {
             return false;
         }
         public fun isDark(lightSensorReading: Float):Boolean{
-            return lightSensorReading<10
+            val res=lightSensorReading<10
+            println("isDark: "+res);
+            return res
         }
         public fun isSomethingCoveringScreen(lightSensorReading:Float, proximitySensorReading:Float):Boolean{
-            if(isDark(lightSensorReading) && proximitySensorReading<5)
-                return true;
-            return false;
+            val res=isDark(lightSensorReading) && proximitySensorReading<5
+            println("proximitySensorReading: "+proximitySensorReading+"\nisSomethingCoveringScreen: "+res);
+            return res;
         }
         public fun convertRadianOrientationToDegree(orientation:FloatArray){
             orientation.set(0, (orientation.get(0)*180/Constants.pi).toFloat());
