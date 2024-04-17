@@ -41,10 +41,10 @@ class TimerService: Service(), SensorEventListener {
     private var startId:Int=0
     private var lastTimestamp:Long=0;
     private var startTime:Long=0;
-    private var accelerometerReadingDone:Boolean=false;
-    private var magnetometerReadingDone:Boolean=false;
-    private var lightSensorReadingDone:Boolean=false;
-    private var proximitySensorReadingDone:Boolean=false;
+    private var accelerometerReadingDone:Int=0;
+    private var magnetometerReadingDone:Int=0;
+    private var lightSensorReadingDone:Int=0;
+    private var proximitySensorReadingDone:Int=0;
 
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
@@ -131,6 +131,7 @@ class TimerService: Service(), SensorEventListener {
         val start=System.currentTimeMillis();
         maxInaccuracy=Math.max(getInaccuracy(),maxInaccuracy);
         timeRemainingMs= getTimeRemaining()
+        println("Time remaining(s): " +timeRemainingMs/1000.0f);
         lastTimestamp=System.currentTimeMillis();
         if (timeRemainingMs <= 0) {
             isBreakPeriod = !isBreakPeriod;
@@ -148,11 +149,11 @@ class TimerService: Service(), SensorEventListener {
     }
 
     fun recordSensorsAndPlay(){
-        accelerometerReadingDone=false;
-        magnetometerReadingDone=false;
-        lightSensorReadingDone=false;
-        proximitySensorReadingDone=false;
-        while(!accelerometerReadingDone||!magnetometerReadingDone||!lightSensorReadingDone||!proximitySensorReadingDone){
+        accelerometerReadingDone=0;
+        magnetometerReadingDone=0;
+        lightSensorReadingDone=0;
+        proximitySensorReadingDone=0;
+        while(accelerometerReadingDone<Constants.maxNumSensorReadings||magnetometerReadingDone<Constants.maxNumSensorReadings||lightSensorReadingDone<Constants.maxNumSensorReadings||proximitySensorReadingDone<Constants.maxNumSensorReadings){
             sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
@@ -214,23 +215,23 @@ class TimerService: Service(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         if(event?.sensor?.type==Sensor.TYPE_ACCELEROMETER) {
             accelerometerReading= event.values
-            accelerometerReadingDone=true
+            accelerometerReadingDone++
             println("accelerometer " +event.values.get(0)+" "+event.values.get(1)+" "+event.values.get(2))
 //            println("isMoving " +Utilities.isMoving(accelerometerReading));
         }
         if(event?.sensor?.type==Sensor.TYPE_MAGNETIC_FIELD) {
             magnetometerReading= event.values
-            magnetometerReadingDone=true
+            magnetometerReadingDone++
             println("magnetometer" +event.values.get(0)+" "+event.values.get(1)+" "+event.values.get(2))
         }
         if(event?.sensor?.type==Sensor.TYPE_PROXIMITY) {
             proximitySensorReading=event.values.get(0);
-            proximitySensorReadingDone=true
+            proximitySensorReadingDone++
             println("proximity " +event.values.get(0))
         }
         if(event?.sensor?.type==Sensor.TYPE_LIGHT) {
             lightSensorReading=event.values.get(0);
-            lightSensorReadingDone=true
+            lightSensorReadingDone++
             println("light " +event.values.get(0))
         }
         val rotationMatrix = FloatArray(9)
