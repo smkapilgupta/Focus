@@ -8,6 +8,5 @@ class Constants {
         public val pi=3.14159265359;
         public val pulseMs: Long=1000;
         public val uiUpdatePeriodMs: Long=10;
-        public val maxNumSensorReadings: Int=1;
     }
 }
