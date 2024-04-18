@@ -47,9 +47,16 @@ class Utilities {
             println("isDark: "+res);
             return res
         }
+
+        public fun isSomethingInProximity(proximitySensorReading:Float):Boolean{
+            val res=proximitySensorReading<5
+            println("isSomethingInProximity: "+res);
+            return res
+        }
+
         public fun isSomethingCoveringScreen(lightSensorReading:Float, proximitySensorReading:Float):Boolean{
             val res=isDark(lightSensorReading) && proximitySensorReading<5
-            println("proximitySensorReading: "+proximitySensorReading+"\nisSomethingCoveringScreen: "+res);
+            println("isSomethingCoveringScreen: "+res);
             return res;
         }
         public fun convertRadianOrientationToDegree(orientation:FloatArray){

@@ -141,7 +141,12 @@ class TimerService: Service(), SensorEventListener {
                 timeRemainingMs = pomodoroTimeSeconds*1000
             schedulePulses();
         }
-        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)+(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nMax inaccuracy: "+maxInaccuracy+"ms\nMax processing delay: "+maxProcessingDelay+"ms ")));
+        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)
+                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nMax inaccuracy: "+maxInaccuracy+"ms\nMax processing delay: "+maxProcessingDelay+"ms \n" +
+                "isInsidePocket: "+Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)+"\nisFacingDown: "+Utilities.isFacingDown(
+            orientation)+"\nisDark: "+Utilities.isDark(lightSensorReading)+"\nisSomethingInProximity: "+Utilities.isSomethingInProximity(
+            proximitySensorReading)+"\nisSomethingCoveringScreen: "+Utilities.isSomethingCoveringScreen(lightSensorReading, proximitySensorReading)
+                +"\nisOnHorizontalSurface: "+Utilities.isOnHorizontalSurface(orientation))));
         serviceActive=true;
         val processingDelay=System.currentTimeMillis()-start;
         maxProcessingDelay=Math.max(maxProcessingDelay,processingDelay)
