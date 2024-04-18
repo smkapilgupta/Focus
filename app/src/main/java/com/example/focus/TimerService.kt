@@ -129,7 +129,8 @@ class TimerService: Service(), SensorEventListener {
 
     fun onPulse(){
         val start=System.currentTimeMillis();
-        maxInaccuracy=Math.max(getInaccuracy(),maxInaccuracy);
+        val currentInaccuracy=getInaccuracy();
+        maxInaccuracy=Math.max(currentInaccuracy,maxInaccuracy);
         timeRemainingMs= getTimeRemaining()
         lastTimestamp=System.currentTimeMillis();
         if (timeRemainingMs <= 0) {
@@ -142,17 +143,33 @@ class TimerService: Service(), SensorEventListener {
             schedulePulses();
         }
         startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)
-                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nMax inaccuracy: "+maxInaccuracy+"ms\nMax processing delay: "+maxProcessingDelay+"ms \n" +
+                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nCurrent inaccuracy: "+currentInaccuracy+"\nMax inaccuracy: "+maxInaccuracy+"ms\nMax processing delay: "+maxProcessingDelay+"ms \n" +
                 "isInsidePocket: "+Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)+"\nisFacingDown: "+Utilities.isFacingDown(
             orientation)+"\nisDark: "+Utilities.isDark(lightSensorReading)+"\nisSomethingInProximity: "+Utilities.isSomethingInProximity(
             proximitySensorReading)+"\nisSomethingCoveringScreen: "+Utilities.isSomethingCoveringScreen(lightSensorReading, proximitySensorReading)
-                +"\nisOnHorizontalSurface: "+Utilities.isOnHorizontalSurface(orientation))));
+                +"\nisOnHorizontalSurface: "+Utilities.isOnHorizontalSurface(orientation)+"\nisFacingDown: "
+                +Utilities.isFacingDown(orientation))));
         serviceActive=true;
         val processingDelay=System.currentTimeMillis()-start;
         maxProcessingDelay=Math.max(maxProcessingDelay,processingDelay)
     }
 
     fun recordSensorsAndPlay(){
+        var start=System.currentTimeMillis();
+        recordSensors()
+        recordSensors()
+        val processingDelay=System.currentTimeMillis()-start;
+        maxProcessingDelay=Math.max(maxProcessingDelay,processingDelay)
+        if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
+                orientation)||!keyguardManager.isKeyguardLocked)
+            startPlayer(mediaQuite);
+        else
+            startPlayer(mediaLoud);
+        vibrator.cancel();
+        vibrator.vibrate(combinedVibrationEffect)
+    }
+
+    fun recordSensors(){
         accelerometerReadingDone=false;
         magnetometerReadingDone=false;
         lightSensorReadingDone=false;
@@ -165,13 +182,6 @@ class TimerService: Service(), SensorEventListener {
             println(""+accelerometerReadingDone+" "+magnetometerReadingDone+" "+lightSensorReadingDone+" "+proximitySensorReadingDone)
         }
         sensorManager.unregisterListener(this);
-        if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
-                orientation)||!keyguardManager.isKeyguardLocked)
-            startPlayer(mediaQuite);
-        else
-            startPlayer(mediaLoud);
-        vibrator.cancel();
-        vibrator.vibrate(combinedVibrationEffect)
     }
 
     override fun onDestroy() {

@@ -11,7 +11,7 @@ class Utilities {
         }
 
         public fun isInsidePocket(orientation: FloatArray,lightSensorReading: Float,proximitySensorReading: Float):Boolean{
-            val res=!isOnHorizontalSurface(orientation)&&isSomethingCoveringScreen(lightSensorReading,proximitySensorReading)
+            val res=isSomethingCoveringScreen(lightSensorReading,proximitySensorReading)
             println("isInsidePocket: "+res);
             return res;
         }
@@ -32,7 +32,7 @@ class Utilities {
             return res;
         }
         public fun isFacingDown(orientation: FloatArray):Boolean{
-            val res=Math.abs(orientation.get(2))>150
+            val res=Math.abs(orientation.get(2))>100
             println("isFacingDown: "+res);
             return res
         }
@@ -55,7 +55,7 @@ class Utilities {
         }
 
         public fun isSomethingCoveringScreen(lightSensorReading:Float, proximitySensorReading:Float):Boolean{
-            val res=isDark(lightSensorReading) && proximitySensorReading<5
+            val res=isDark(lightSensorReading) && isSomethingInProximity(proximitySensorReading)
             println("isSomethingCoveringScreen: "+res);
             return res;
         }
