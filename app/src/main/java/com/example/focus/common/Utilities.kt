@@ -12,7 +12,7 @@ class Utilities {
 
         public fun isInsidePocket(orientation: FloatArray,lightSensorReading: Float,proximitySensorReading: Float):Boolean{
             val res=isSomethingCoveringScreen(lightSensorReading,proximitySensorReading)
-            println("isInsidePocket: "+res);
+//            println("isInsidePocket: "+res);
             return res;
         }
         public fun isMoving(accelerometerReading: FloatArray):Boolean{
@@ -28,12 +28,12 @@ class Utilities {
         }
         public fun isOnHorizontalSurface(orientation: FloatArray):Boolean{
             val res=Math.abs(orientation.get(2))>172||return Math.abs(orientation.get(2))<8
-            println("isOnHorizontalSurface: "+res);
+//            println("isOnHorizontalSurface: "+res);
             return res;
         }
         public fun isFacingDown(orientation: FloatArray):Boolean{
             val res=Math.abs(orientation.get(2))>100
-            println("isFacingDown: "+res);
+//            println("isFacingDown: "+res);
             return res
         }
         public fun isFacingUp(orientation: FloatArray):Boolean{
@@ -44,19 +44,19 @@ class Utilities {
         }
         public fun isDark(lightSensorReading: Float):Boolean{
             val res=lightSensorReading<10
-            println("isDark: "+res);
+//            println("isDark: "+res);
             return res
         }
 
         public fun isSomethingInProximity(proximitySensorReading:Float):Boolean{
             val res=proximitySensorReading<5
-            println("isSomethingInProximity: "+res);
+//            println("isSomethingInProximity: "+res);
             return res
         }
 
         public fun isSomethingCoveringScreen(lightSensorReading:Float, proximitySensorReading:Float):Boolean{
             val res=isDark(lightSensorReading) && isSomethingInProximity(proximitySensorReading)
-            println("isSomethingCoveringScreen: "+res);
+//            println("isSomethingCoveringScreen: "+res);
             return res;
         }
         public fun convertRadianOrientationToDegree(orientation:FloatArray){

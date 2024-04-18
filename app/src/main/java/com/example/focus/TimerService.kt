@@ -132,6 +132,7 @@ class TimerService: Service(), SensorEventListener {
         val currentInaccuracy=getInaccuracy();
         maxInaccuracy=Math.max(currentInaccuracy,maxInaccuracy);
         timeRemainingMs= getTimeRemaining()
+        println("Time remaining: "+ timeRemainingMs/1000f);
         lastTimestamp=System.currentTimeMillis();
         if (timeRemainingMs <= 0) {
             isBreakPeriod = !isBreakPeriod;
@@ -170,11 +171,14 @@ class TimerService: Service(), SensorEventListener {
     }
 
     fun recordSensors(){
+        val start=System.currentTimeMillis()
         accelerometerReadingDone=false;
         magnetometerReadingDone=false;
         lightSensorReadingDone=false;
         proximitySensorReadingDone=false;
         while(!accelerometerReadingDone||!magnetometerReadingDone||!lightSensorReadingDone||!proximitySensorReadingDone){
+            if(System.currentTimeMillis()-start>Constants.breakTimeSeconds*1000)
+                break;
             sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
