@@ -32,7 +32,8 @@ class TimerService: Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private lateinit var keyguardManager: KeyguardManager
     private var maxInaccuracy: Long=0
-    private var maxProcessingDelay: Long=0
+    private var notificationTime: Long=0
+    private var sensorRecordingTime: Long=0
     private lateinit var accelerometer:Sensor
     private lateinit var magnetometer:Sensor
     private lateinit var lightSensor:Sensor
@@ -132,7 +133,6 @@ class TimerService: Service(), SensorEventListener {
         val currentInaccuracy=getInaccuracy();
         maxInaccuracy=Math.max(currentInaccuracy,maxInaccuracy);
         timeRemainingMs= getTimeRemaining()
-        println("Time remaining: "+ timeRemainingMs/1000f);
         lastTimestamp=System.currentTimeMillis();
         if (timeRemainingMs <= 0) {
             isBreakPeriod = !isBreakPeriod;
@@ -144,23 +144,23 @@ class TimerService: Service(), SensorEventListener {
             schedulePulses();
         }
         startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)
-                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nCurrent inaccuracy: "+currentInaccuracy+"\nMax inaccuracy: "+maxInaccuracy+"ms\nMax processing delay: "+maxProcessingDelay+"ms \n" +
-                "isInsidePocket: "+Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)+"\nisFacingDown: "+Utilities.isFacingDown(
-            orientation)+"\nisDark: "+Utilities.isDark(lightSensorReading)+"\nisSomethingInProximity: "+Utilities.isSomethingInProximity(
+                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nCurrent inaccuracy: "+currentInaccuracy+
+                "\nMax inaccuracy: "+maxInaccuracy+"ms\nNotifcation delay: "+notificationTime+"ms \nSensorReading time: "+sensorRecordingTime+" ms\n" +
+                "isInsidePocket: "+Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)+
+                "\nisDark: "+Utilities.isDark(lightSensorReading)+"\nisSomethingInProximity: "+Utilities.isSomethingInProximity(
             proximitySensorReading)+"\nisSomethingCoveringScreen: "+Utilities.isSomethingCoveringScreen(lightSensorReading, proximitySensorReading)
                 +"\nisOnHorizontalSurface: "+Utilities.isOnHorizontalSurface(orientation)+"\nisFacingDown: "
                 +Utilities.isFacingDown(orientation))));
         serviceActive=true;
         val processingDelay=System.currentTimeMillis()-start;
-        maxProcessingDelay=Math.max(maxProcessingDelay,processingDelay)
+        notificationTime=Math.max(notificationTime,processingDelay)
     }
 
     fun recordSensorsAndPlay(){
         var start=System.currentTimeMillis();
         recordSensors()
         recordSensors()
-        val processingDelay=System.currentTimeMillis()-start;
-        maxProcessingDelay=Math.max(maxProcessingDelay,processingDelay)
+        sensorRecordingTime=System.currentTimeMillis()-start;
         if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
                 orientation)||!keyguardManager.isKeyguardLocked)
             startPlayer(mediaQuite);
