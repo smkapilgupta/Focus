@@ -34,6 +34,7 @@ class TimerService: Service(), SensorEventListener {
     private var maxInaccuracy: Long=0
     private var notificationTime: Long=0
     private var sensorRecordingTime: Long=0
+    private var lastAlarmInstanceDelay: Long=0
     private lateinit var accelerometer:Sensor
     private lateinit var magnetometer:Sensor
     private lateinit var lightSensor:Sensor
@@ -53,29 +54,18 @@ class TimerService: Service(), SensorEventListener {
         public var isBreakPeriod=false;
         public var timeRemainingMs:Long=Constants.pomodoroTimeSeconds*1000;
         public var thread: Thread? =null;
-        public var scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor?=null;
-        public var handler: Handler?=null;
         public var serviceActive: Boolean = false;
-        public var sensorsActive: Boolean = false;
         public var proximitySensorReading: Float = 0.0F;
         public var lightSensorReading: Float = 0.0F;
         public var accelerometerReading: FloatArray=FloatArray(3)
         public var magnetometerReading: FloatArray= FloatArray(3)
         public var orientation: FloatArray= FloatArray(3)
-        private var runnable: Runnable? =null;
 
         public fun isLooperThreadAlive():Boolean{
-//            return thread?.isAlive==true;
-//            return scheduledThreadPoolExecutor?.isShutdown==false
-            if(runnable!=null)
-                return handler?.hasCallbacks(runnable!!)==true;
-            return false;
+            return thread?.isAlive==true;
         }
         public fun shutDownLooperThread(){
-//            thread?.interrupt()
-//            TimerService.scheduledThreadPoolExecutor?.shutdown();
-            if(runnable!=null)
-                handler?.removeCallbacks(runnable!!);
+            thread?.interrupt()
         }
     }
 
@@ -94,25 +84,28 @@ class TimerService: Service(), SensorEventListener {
         proxitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_PROXIMITY) as Sensor;
         lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
         this.startId=startId
-        scheduledThreadPoolExecutor=ScheduledThreadPoolExecutor(1);
-        runnable= Runnable { onPulse() }
-        handler = Handler(Looper.getMainLooper());
-        schedulePulses();
+        thread = Thread(Runnable {
+            try {
+                schedulePulses()
+                while (true) {
+                    onPulse();
+                    Thread.sleep(1000);
+                }
+            }
+            catch (_:InterruptedException){
+
+            }
+        });
+        thread!!.start();
         return START_STICKY
     }
 
     fun schedulePulses(){
         lastTimestamp=System.currentTimeMillis();
-        startTime=lastTimestamp
-        handler!!.removeCallbacks(runnable!!);
-        var pulses:Long=0;
         if(isBreakPeriod)
-            pulses= breakTimeSeconds;
+            startTime=lastTimestamp+ timeRemainingMs-breakTimeSeconds*1000
         else
-            pulses= pomodoroTimeSeconds;
-        for (i in 0..pulses+1){
-            handler!!.postDelayed(runnable!!,i*Constants.pulseMs);
-        }
+            startTime=lastTimestamp+ timeRemainingMs-pomodoroTimeSeconds*1000
         sensorManager.unregisterListener(this)
     }
 
@@ -135,6 +128,7 @@ class TimerService: Service(), SensorEventListener {
         timeRemainingMs= getTimeRemaining()
         lastTimestamp=System.currentTimeMillis();
         if (timeRemainingMs <= 0) {
+            lastAlarmInstanceDelay=Math.abs(timeRemainingMs);
             isBreakPeriod = !isBreakPeriod;
             Thread{recordSensorsAndPlay()}.start();
             if (isBreakPeriod)
@@ -144,8 +138,8 @@ class TimerService: Service(), SensorEventListener {
             schedulePulses();
         }
         startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)
-                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nCurrent inaccuracy: "+currentInaccuracy+
-                "\nMax inaccuracy: "+maxInaccuracy+"ms\nNotifcation delay: "+notificationTime+"ms \nSensorReading time: "+sensorRecordingTime+" ms\n" +
+                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\n\nLastAlarmInstanceDelay: "+lastAlarmInstanceDelay+" ms\nCurrent inaccuracy: "+currentInaccuracy+
+                " ms\nMax inaccuracy: "+maxInaccuracy+" ms\nNotifcation delay: "+notificationTime+"ms \nSensorReading time: "+sensorRecordingTime+" ms\n" +
                 "isInsidePocket: "+Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)+
                 "\nisDark: "+Utilities.isDark(lightSensorReading)+"\nisSomethingInProximity: "+Utilities.isSomethingInProximity(
             proximitySensorReading)+"\nisSomethingCoveringScreen: "+Utilities.isSomethingCoveringScreen(lightSensorReading, proximitySensorReading)
