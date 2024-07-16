@@ -155,13 +155,17 @@ class TimerService: Service(), SensorEventListener {
         recordSensors()
         recordSensors()
         sensorRecordingTime=System.currentTimeMillis()-start;
+        vibrator.cancel()
         if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
-                orientation)||!keyguardManager.isKeyguardLocked)
+                orientation)||!keyguardManager.isKeyguardLocked) {
+            if(keyguardManager.isKeyguardLocked)
+                vibrator.vibrate(combinedVibrationEffect)
             startPlayer(mediaQuite);
-        else
+        }
+        else {
             startPlayer(mediaLoud);
-        vibrator.cancel();
-        vibrator.vibrate(combinedVibrationEffect)
+            vibrator.vibrate(combinedVibrationEffect)
+        }
     }
 
     fun recordSensors(){
