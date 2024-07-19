@@ -22,6 +22,7 @@ import androidx.core.app.NotificationCompat
 import com.example.focus.common.Constants
 import com.example.focus.common.Utilities
 import com.example.focus.common.Utilities.Companion.formatTimeFromSeconds
+import java.time.LocalDateTime
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 
@@ -47,6 +48,7 @@ class TimerService: Service(), SensorEventListener {
     private var magnetometerReadingDone:Boolean=false;
     private var lightSensorReadingDone:Boolean=false;
     private var proximitySensorReadingDone:Boolean=false;
+    private var lastBreakInstances=arrayOf(LocalDateTime.now().toString())
 
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
@@ -70,6 +72,7 @@ class TimerService: Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        println("onStartCommand called")
         createNotificationChannel();
         mediaLoud = MediaPlayer.create(this, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune);
         mediaQuite = MediaPlayer.create(this, R.raw.trine4_pomodoro);
@@ -101,6 +104,7 @@ class TimerService: Service(), SensorEventListener {
     }
 
     fun schedulePulses(){
+        println("Scheduling pulses")
         lastTimestamp=System.currentTimeMillis();
         if(isBreakPeriod)
             startTime=lastTimestamp+ timeRemainingMs-breakTimeSeconds*1000
@@ -131,14 +135,16 @@ class TimerService: Service(), SensorEventListener {
             lastAlarmInstanceDelay=Math.abs(timeRemainingMs);
             isBreakPeriod = !isBreakPeriod;
             Thread{recordSensorsAndPlay()}.start();
-            if (isBreakPeriod)
-                timeRemainingMs = breakTimeSeconds*1000
+            if (isBreakPeriod) {
+                timeRemainingMs = breakTimeSeconds * 1000
+                lastBreakInstances=arrayOf(LocalDateTime.now().toString())+lastBreakInstances
+            }
             else
                 timeRemainingMs = pomodoroTimeSeconds*1000
             schedulePulses();
         }
         startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)
-                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\n\nLastAlarmInstanceDelay: "+lastAlarmInstanceDelay+" ms\nCurrent inaccuracy: "+currentInaccuracy+
+                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nAll past break instances: "+lastBreakInstances.reduce{acc,date-> acc+"|"+date}+"\n\nLastAlarmInstanceDelay: "+lastAlarmInstanceDelay+" ms\nCurrent inaccuracy: "+currentInaccuracy+
                 " ms\nMax inaccuracy: "+maxInaccuracy+" ms\nNotifcation delay: "+notificationTime+"ms \nSensorReading time: "+sensorRecordingTime+" ms\n" +
                 "isInsidePocket: "+Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)+
                 "\nisDark: "+Utilities.isDark(lightSensorReading)+"\nisSomethingInProximity: "+Utilities.isSomethingInProximity(
@@ -187,6 +193,7 @@ class TimerService: Service(), SensorEventListener {
     }
 
     override fun onDestroy() {
+        println("onDestroy called")
         super.onDestroy()
         serviceActive=false;
     }

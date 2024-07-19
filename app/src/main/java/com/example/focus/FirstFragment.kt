@@ -36,7 +36,7 @@ class FirstFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        println("onViewCreated called")
         binding.settings.setOnClickListener {
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
         }
@@ -82,12 +82,14 @@ class FirstFragment : Fragment() {
     }
 
     override fun onResume() {
+        println("onResume called")
         super.onResume()
         handler?.post(runnable!!);
         updateUx(TimerService.isLooperThreadAlive());
     }
 
     override fun onPause() {
+        println("onPause called")
         super.onPause()
         handler?.removeCallbacks(runnable!!);
     }
@@ -106,6 +108,7 @@ class FirstFragment : Fragment() {
 
     }
     override fun onDestroyView() {
+        println("onDestroy called")
         super.onDestroyView()
         _binding = null
     }
