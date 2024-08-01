@@ -74,7 +74,7 @@ class TimerService: Service(), SensorEventListener {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         println("onStartCommand called")
         createNotificationChannel();
-        mediaLoud = MediaPlayer.create(this, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune);
+        mediaLoud = MediaPlayer.create(this, R.raw.sound_notif2_132674);
         mediaQuite = MediaPlayer.create(this, R.raw.trine4_pomodoro);
         vibrator = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
         val vibrationEffect1 =
