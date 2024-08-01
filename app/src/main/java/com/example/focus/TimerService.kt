@@ -138,6 +138,7 @@ class TimerService: Service(), SensorEventListener {
             if (isBreakPeriod) {
                 timeRemainingMs = breakTimeSeconds * 1000
                 lastBreakInstances=arrayOf(LocalDateTime.now().toString())+lastBreakInstances
+                lastBreakInstances=lastBreakInstances.copyOfRange(0,Math.min(10,lastBreakInstances.size-1))
             }
             else
                 timeRemainingMs = pomodoroTimeSeconds*1000

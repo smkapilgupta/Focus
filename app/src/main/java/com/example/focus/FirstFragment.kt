@@ -111,5 +111,6 @@ class FirstFragment : Fragment() {
         println("onDestroy called")
         super.onDestroyView()
         _binding = null
+        handler?.removeCallbacks(runnable!!);
     }
 }
