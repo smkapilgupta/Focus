@@ -24,10 +24,9 @@ import com.example.focus.common.Utilities
 import com.example.focus.common.Utilities.Companion.formatTimeFromSeconds
 import java.time.LocalDateTime
 import java.util.concurrent.ScheduledThreadPoolExecutor
-
+import java.util.UUID
 
 class TimerService: Service(), SensorEventListener {
-    private lateinit var mediaLoud: MediaPlayer
     private lateinit var mediaQuite: MediaPlayer
     private lateinit var vibrator: VibratorManager
     private lateinit var sensorManager: SensorManager
@@ -49,7 +48,7 @@ class TimerService: Service(), SensorEventListener {
     private var lightSensorReadingDone:Boolean=false;
     private var proximitySensorReadingDone:Boolean=false;
     private var lastBreakInstances=arrayOf(LocalDateTime.now().toString())
-
+    private var loudTunes=arrayOf(R.raw.sound_notif2_132674, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_connect,R.raw.halo_canticles, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor)
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
         public var breakTimeSeconds= Constants.breakTimeSeconds;
@@ -74,7 +73,6 @@ class TimerService: Service(), SensorEventListener {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         println("onStartCommand called")
         createNotificationChannel();
-        mediaLoud = MediaPlayer.create(this, R.raw.sound_notif2_132674);
         mediaQuite = MediaPlayer.create(this, R.raw.trine4_pomodoro);
         vibrator = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
         val vibrationEffect1 =
@@ -157,6 +155,14 @@ class TimerService: Service(), SensorEventListener {
         notificationTime=Math.max(notificationTime,processingDelay)
     }
 
+    fun generateRandomNumber():Int{
+        var uuid=UUID.randomUUID().toString()
+        var sumOfChars=0;
+        for(i:Int in 0..uuid.length-1){
+            sumOfChars+=uuid.get(i).code
+        }
+        return sumOfChars
+    }
     fun recordSensorsAndPlay(){
         var start=System.currentTimeMillis();
         recordSensors()
@@ -170,6 +176,7 @@ class TimerService: Service(), SensorEventListener {
             startPlayer(mediaQuite);
         }
         else {
+            var mediaLoud: MediaPlayer= MediaPlayer.create(this, loudTunes[generateRandomNumber()%loudTunes.size]);
             startPlayer(mediaLoud);
             vibrator.vibrate(combinedVibrationEffect)
         }
