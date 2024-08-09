@@ -48,7 +48,7 @@ class TimerService: Service(), SensorEventListener {
     private var lightSensorReadingDone:Boolean=false;
     private var proximitySensorReadingDone:Boolean=false;
     private var lastBreakInstances=arrayOf(LocalDateTime.now().toString())
-    private var loudTunes=arrayOf(R.raw.sound_notif2_132674, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_connect,R.raw.halo_canticles, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor)
+    private var loudTunes=arrayOf(R.raw.sound_notif2_132674, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_connect,R.raw.halo_canticles, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
         public var breakTimeSeconds= Constants.breakTimeSeconds;
