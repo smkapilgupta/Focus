@@ -97,6 +97,8 @@ class TimerService: Service(), SensorEventListener {
 
             }
         });
+        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)
+                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"})));
         thread!!.start();
         return START_STICKY
     }
@@ -142,14 +144,6 @@ class TimerService: Service(), SensorEventListener {
                 timeRemainingMs = pomodoroTimeSeconds*1000
             schedulePulses();
         }
-        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)
-                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"}+"\nAll past break instances: "+lastBreakInstances.reduce{acc,date-> acc+"|"+date}+"\n\nLastAlarmInstanceDelay: "+lastAlarmInstanceDelay+" ms\nCurrent inaccuracy: "+currentInaccuracy+
-                " ms\nMax inaccuracy: "+maxInaccuracy+" ms\nNotifcation delay: "+notificationTime+"ms \nSensorReading time: "+sensorRecordingTime+" ms\n" +
-                "isInsidePocket: "+Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)+
-                "\nisDark: "+Utilities.isDark(lightSensorReading)+"\nisSomethingInProximity: "+Utilities.isSomethingInProximity(
-            proximitySensorReading)+"\nisSomethingCoveringScreen: "+Utilities.isSomethingCoveringScreen(lightSensorReading, proximitySensorReading)
-                +"\nisOnHorizontalSurface: "+Utilities.isOnHorizontalSurface(orientation)+"\nisFacingDown: "
-                +Utilities.isFacingDown(orientation))));
         serviceActive=true;
         val processingDelay=System.currentTimeMillis()-start;
         notificationTime=Math.max(notificationTime,processingDelay)
