@@ -20,9 +20,11 @@ import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.example.focus.common.Constants
+import com.example.focus.common.TimerUtilities
 import com.example.focus.common.Utilities
 import com.example.focus.common.Utilities.Companion.formatTimeFromSeconds
 import java.time.LocalDateTime
+import java.util.Timer
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.UUID
 
@@ -31,23 +33,18 @@ class TimerService: Service(), SensorEventListener {
     private lateinit var vibrator: VibratorManager
     private lateinit var sensorManager: SensorManager
     private lateinit var keyguardManager: KeyguardManager
-    private var maxInaccuracy: Long=0
-    private var notificationTime: Long=0
     private var sensorRecordingTime: Long=0
-    private var lastAlarmInstanceDelay: Long=0
     private lateinit var accelerometer:Sensor
     private lateinit var magnetometer:Sensor
     private lateinit var lightSensor:Sensor
     private lateinit var proxitySensor:Sensor
     private lateinit var combinedVibrationEffect:CombinedVibration
     private var startId:Int=0
-    private var lastTimestamp:Long=0;
     private var startTime:Long=0;
     private var accelerometerReadingDone:Boolean=false;
     private var magnetometerReadingDone:Boolean=false;
     private var lightSensorReadingDone:Boolean=false;
     private var proximitySensorReadingDone:Boolean=false;
-    private var lastBreakInstances=arrayOf(LocalDateTime.now().toString())
     private var loudTunes=arrayOf(R.raw.sound_notif2_132674, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_connect,R.raw.halo_canticles, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
@@ -85,68 +82,30 @@ class TimerService: Service(), SensorEventListener {
         proxitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_PROXIMITY) as Sensor;
         lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
         this.startId=startId
-        thread = Thread(Runnable {
-            try {
-                schedulePulses()
-                while (true) {
-                    onPulse();
-                    Thread.sleep(1000);
-                }
-            }
-            catch (_:InterruptedException){
-
-            }
-        });
+        startTime=System.currentTimeMillis()
+        thread = TimerUtilities.startTimer(System.currentTimeMillis()+timeRemainingMs,fun (endTime:Long){onSecond(endTime)},fun (){
+            onTimerEnd()
+        })
         startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)
                 +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"})));
-        thread!!.start();
         return START_STICKY
     }
 
-    fun schedulePulses(){
-        println("Scheduling pulses")
-        lastTimestamp=System.currentTimeMillis();
-        if(isBreakPeriod)
-            startTime=lastTimestamp+ timeRemainingMs-breakTimeSeconds*1000
-        else
-            startTime=lastTimestamp+ timeRemainingMs-pomodoroTimeSeconds*1000
-        sensorManager.unregisterListener(this)
+    fun onSecond(endTime:Long){
+        timeRemainingMs= Math.max(0,endTime-System.currentTimeMillis())
     }
 
-    fun getInaccuracy():Long{
-        if(lastTimestamp==startTime)
-            return 0;
-        return Math.abs((System.currentTimeMillis()-lastTimestamp)-Constants.pulseMs);
-    }
-
-    fun getTimeRemaining():Long{
-        if(isBreakPeriod)
-            return breakTimeSeconds*1000-(System.currentTimeMillis()-startTime);
-        return pomodoroTimeSeconds*1000-(System.currentTimeMillis()-startTime);
-    }
-
-    fun onPulse(){
-        val start=System.currentTimeMillis();
-        val currentInaccuracy=getInaccuracy();
-        maxInaccuracy=Math.max(currentInaccuracy,maxInaccuracy);
-        timeRemainingMs= getTimeRemaining()
-        lastTimestamp=System.currentTimeMillis();
-        if (timeRemainingMs <= 0) {
-            lastAlarmInstanceDelay=Math.abs(timeRemainingMs);
-            isBreakPeriod = !isBreakPeriod;
-            Thread{recordSensorsAndPlay()}.start();
-            if (isBreakPeriod) {
-                timeRemainingMs = breakTimeSeconds * 1000
-                lastBreakInstances=arrayOf(LocalDateTime.now().toString())+lastBreakInstances
-                lastBreakInstances=lastBreakInstances.copyOfRange(0,Math.min(10,lastBreakInstances.size-1))
-            }
-            else
-                timeRemainingMs = pomodoroTimeSeconds*1000
-            schedulePulses();
+    fun onTimerEnd(){
+        startTime=System.currentTimeMillis()
+        isBreakPeriod = !isBreakPeriod;
+        if (isBreakPeriod) {
+            timeRemainingMs = breakTimeSeconds * 1000
         }
-        serviceActive=true;
-        val processingDelay=System.currentTimeMillis()-start;
-        notificationTime=Math.max(notificationTime,processingDelay)
+        else
+            timeRemainingMs = pomodoroTimeSeconds*1000
+        sensorManager.unregisterListener(this)
+        thread=TimerUtilities.startTimer(timeRemainingMs+startTime,fun (endTime:Long){onSecond(endTime)},fun (){onTimerEnd()})
+        recordSensorsAndPlay()
     }
 
     fun generateRandomNumber():Int{

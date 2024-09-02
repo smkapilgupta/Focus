@@ -11,8 +11,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
 import com.example.focus.common.Constants
+import com.example.focus.common.TimerUtilities
 import com.example.focus.common.Utilities
 import com.example.focus.databinding.FragmentFirstBinding
+import java.util.Timer
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -105,7 +107,6 @@ class FirstFragment : Fragment() {
         }else{
             binding.timer.setTextColor(Color.parseColor("#8647C9"));
         }
-
     }
     override fun onDestroyView() {
         println("onDestroy called")
