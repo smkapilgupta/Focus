@@ -67,13 +67,18 @@ class Utilities {
             orientation.set(2, (orientation.get(2)*180/Constants.pi).toFloat());
         }
 
-        fun generateRandomNumber():Int{
+        var lastRN:Long=0;
+        fun generateRandomNumber(rangeStart:Long,rangeEnd:Long):Long{
             var uuid= UUID.randomUUID().toString()
             var sumOfChars=0;
             for(i:Int in 0..uuid.length-1){
                 sumOfChars+=uuid.get(i).code
             }
-            return sumOfChars
+            var newRN:Long= rangeStart+(lastRN+sumOfChars)%(rangeEnd-rangeStart+1)
+            if(newRN == lastRN)
+                newRN=rangeStart+(lastRN+sumOfChars+1)%(rangeEnd-rangeStart+1)
+            lastRN=newRN
+            return newRN
         }
     }
 }

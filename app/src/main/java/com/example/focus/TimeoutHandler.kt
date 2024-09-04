@@ -71,7 +71,7 @@ class TimeoutHandler: SensorEventListener {
             startPlayer(mediaQuite);
         }
         else {
-            var mediaLoud: MediaPlayer= MediaPlayer.create(context, loudTunes[generateRandomNumber()%loudTunes.size]);
+            var mediaLoud: MediaPlayer= MediaPlayer.create(context, loudTunes[(generateRandomNumber(0,loudTunes.size.toLong()-1)%loudTunes.size).toInt()]);
             startPlayer(mediaLoud);
             vibrator.vibrate(combinedVibrationEffect)
         }
