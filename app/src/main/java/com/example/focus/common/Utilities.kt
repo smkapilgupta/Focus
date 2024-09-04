@@ -1,5 +1,7 @@
 package com.example.focus.common
 
+import java.util.UUID
+
 
 class Utilities {
     companion object {
@@ -63,6 +65,15 @@ class Utilities {
             orientation.set(0, (orientation.get(0)*180/Constants.pi).toFloat());
             orientation.set(1, (orientation.get(1)*180/Constants.pi).toFloat());
             orientation.set(2, (orientation.get(2)*180/Constants.pi).toFloat());
+        }
+
+        fun generateRandomNumber():Int{
+            var uuid= UUID.randomUUID().toString()
+            var sumOfChars=0;
+            for(i:Int in 0..uuid.length-1){
+                sumOfChars+=uuid.get(i).code
+            }
+            return sumOfChars
         }
     }
 }

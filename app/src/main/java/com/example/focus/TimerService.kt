@@ -1,156 +1,33 @@
 package com.example.focus
-import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
-import android.media.AudioManager
-import android.media.MediaPlayer
-import android.os.CombinedVibration
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
-import android.os.VibrationEffect
-import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.example.focus.common.Constants
 import com.example.focus.common.TimerUtilities
-import com.example.focus.common.Utilities
 import com.example.focus.common.Utilities.Companion.formatTimeFromSeconds
-import java.time.LocalDateTime
-import java.util.Timer
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.UUID
 
-class TimerService: Service(), SensorEventListener {
-    private lateinit var mediaQuite: MediaPlayer
-    private lateinit var vibrator: VibratorManager
-    private lateinit var sensorManager: SensorManager
-    private lateinit var keyguardManager: KeyguardManager
-    private var sensorRecordingTime: Long=0
-    private lateinit var accelerometer:Sensor
-    private lateinit var magnetometer:Sensor
-    private lateinit var lightSensor:Sensor
-    private lateinit var proxitySensor:Sensor
-    private lateinit var combinedVibrationEffect:CombinedVibration
+class TimerService: Service() {
+    private lateinit var timeoutHandler:TimeoutHandler
     private var startId:Int=0
-    private var startTime:Long=0;
-    private var accelerometerReadingDone:Boolean=false;
-    private var magnetometerReadingDone:Boolean=false;
-    private var lightSensorReadingDone:Boolean=false;
-    private var proximitySensorReadingDone:Boolean=false;
-    private var loudTunes=arrayOf(R.raw.sound_notif2_132674, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_connect,R.raw.halo_canticles, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
     companion object {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
         public var breakTimeSeconds= Constants.breakTimeSeconds;
         public var isBreakPeriod=false;
         public var timeRemainingMs:Long=Constants.pomodoroTimeSeconds*1000;
-        public var thread: Thread? =null;
         public var serviceActive: Boolean = false;
-        public var proximitySensorReading: Float = 0.0F;
-        public var lightSensorReading: Float = 0.0F;
-        public var accelerometerReading: FloatArray=FloatArray(3)
-        public var magnetometerReading: FloatArray= FloatArray(3)
-        public var orientation: FloatArray= FloatArray(3)
-
-        public fun isLooperThreadAlive():Boolean{
-            return thread?.isAlive==true;
-        }
-        public fun shutDownLooperThread(){
-            thread?.interrupt()
-        }
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         println("onStartCommand called")
         createNotificationChannel();
-        mediaQuite = MediaPlayer.create(this, R.raw.trine4_pomodoro);
-        vibrator = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-        val vibrationEffect1 =
-            VibrationEffect.createOneShot(2000, VibrationEffect.DEFAULT_AMPLITUDE)
-        combinedVibrationEffect=CombinedVibration.createParallel(vibrationEffect1);
-        keyguardManager=getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager;
-        accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) as Sensor;
-        magnetometer = sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) as Sensor;
-        proxitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_PROXIMITY) as Sensor;
-        lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
+        timeoutHandler=TimeoutHandler(this)
         this.startId=startId
-        startTime=System.currentTimeMillis()
-        thread = TimerUtilities.startTimer(System.currentTimeMillis()+timeRemainingMs,fun (endTime:Long){onSecond(endTime)},fun (){
-            onTimerEnd()
-        })
-        startForeground(startId, createNotification(formatTimeFromSeconds(timeRemainingMs/1000)
-                +(if(isBreakPeriod) {"\nTake a break"} else {"\nFocus on job"})));
+        startForeground(startId, createNotification(""));
         return START_STICKY
-    }
-
-    fun onSecond(endTime:Long){
-        timeRemainingMs= Math.max(0,endTime-System.currentTimeMillis())
-    }
-
-    fun onTimerEnd(){
-        startTime=System.currentTimeMillis()
-        isBreakPeriod = !isBreakPeriod;
-        if (isBreakPeriod) {
-            timeRemainingMs = breakTimeSeconds * 1000
-        }
-        else
-            timeRemainingMs = pomodoroTimeSeconds*1000
-        sensorManager.unregisterListener(this)
-        thread=TimerUtilities.startTimer(timeRemainingMs+startTime,fun (endTime:Long){onSecond(endTime)},fun (){onTimerEnd()})
-        recordSensorsAndPlay()
-    }
-
-    fun generateRandomNumber():Int{
-        var uuid=UUID.randomUUID().toString()
-        var sumOfChars=0;
-        for(i:Int in 0..uuid.length-1){
-            sumOfChars+=uuid.get(i).code
-        }
-        return sumOfChars
-    }
-    fun recordSensorsAndPlay(){
-        var start=System.currentTimeMillis();
-        recordSensors()
-        recordSensors()
-        sensorRecordingTime=System.currentTimeMillis()-start;
-        vibrator.cancel()
-        if(Utilities.isInsidePocket(orientation, lightSensorReading, proximitySensorReading)||Utilities.isFacingDown(
-                orientation)||!keyguardManager.isKeyguardLocked) {
-            if(keyguardManager.isKeyguardLocked)
-                vibrator.vibrate(combinedVibrationEffect)
-            startPlayer(mediaQuite);
-        }
-        else {
-            var mediaLoud: MediaPlayer= MediaPlayer.create(this, loudTunes[generateRandomNumber()%loudTunes.size]);
-            startPlayer(mediaLoud);
-            vibrator.vibrate(combinedVibrationEffect)
-        }
-    }
-
-    fun recordSensors(){
-        val start=System.currentTimeMillis()
-        accelerometerReadingDone=false;
-        magnetometerReadingDone=false;
-        lightSensorReadingDone=false;
-        proximitySensorReadingDone=false;
-        while(!accelerometerReadingDone||!magnetometerReadingDone||!lightSensorReadingDone||!proximitySensorReadingDone){
-            if(System.currentTimeMillis()-start>Constants.breakTimeSeconds*1000)
-                break;
-            sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            println(""+accelerometerReadingDone+" "+magnetometerReadingDone+" "+lightSensorReadingDone+" "+proximitySensorReadingDone)
-        }
-        sensorManager.unregisterListener(this);
     }
 
     override fun onDestroy() {
@@ -183,48 +60,5 @@ class TimerService: Service(), SensorEventListener {
 //            .setContentIntent(pendingIntent)
 
         return notificationBuilder.build()
-    }
-
-    private fun startPlayer(mediaPlayer: MediaPlayer){
-        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager;
-        val originalVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,maxVolume,0);
-        mediaPlayer.setOnCompletionListener {
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,originalVolume,0);
-        }
-        mediaPlayer.start();
-    }
-
-    override fun onSensorChanged(event: SensorEvent?) {
-        if(event?.sensor?.type==Sensor.TYPE_ACCELEROMETER) {
-            accelerometerReading= event.values
-            accelerometerReadingDone=true
-            println("accelerometer " +event.values.get(0)+" "+event.values.get(1)+" "+event.values.get(2))
-//            println("isMoving " +Utilities.isMoving(accelerometerReading));
-        }
-        if(event?.sensor?.type==Sensor.TYPE_MAGNETIC_FIELD) {
-            magnetometerReading= event.values
-            magnetometerReadingDone=true
-            println("magnetometer" +event.values.get(0)+" "+event.values.get(1)+" "+event.values.get(2))
-        }
-        if(event?.sensor?.type==Sensor.TYPE_PROXIMITY) {
-            proximitySensorReading=event.values.get(0);
-            proximitySensorReadingDone=true
-            println("proximity " +event.values.get(0))
-        }
-        if(event?.sensor?.type==Sensor.TYPE_LIGHT) {
-            lightSensorReading=event.values.get(0);
-            lightSensorReadingDone=true
-            println("light " +event.values.get(0))
-        }
-        val rotationMatrix = FloatArray(9)
-        SensorManager.getRotationMatrix(rotationMatrix, null, accelerometerReading, magnetometerReading)
-
-        SensorManager.getOrientation(rotationMatrix, orientation)
-        Utilities.convertRadianOrientationToDegree(orientation);
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
     }
 }
