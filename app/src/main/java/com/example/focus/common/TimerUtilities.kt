@@ -5,31 +5,42 @@ import com.example.focus.common.Constants.Companion.pulseMs
 class TimerUtilities {
     companion object {
         var thread:Thread?=null
+        var isTimerActive:Boolean=false
+        private var endTime:Long=0;
 
-        fun isThreadAlive():Boolean{
-            return TimerUtilities.thread?.isAlive==true;
+        fun pauseTimer(){
+            isTimerActive=false
         }
 
-        public fun shutDownThread(){
-            TimerUtilities.thread?.interrupt()
+        fun resetTimer(){
+            endTime=System.currentTimeMillis()*2
+            isTimerActive=false
         }
 
-        fun startTimer(endTime: Long, onSecond: (endTime:Long) -> Unit, onTimerEnd: () -> Unit): Thread {
+        fun startTimer(endTime:Long){
+            TimerUtilities.endTime=endTime
+            isTimerActive=true
+        }
+
+        fun initializeTimer(onSecond: (endTime:Long) -> Unit, onTimerEnd: () -> Unit) {
+            endTime=System.currentTimeMillis()*2
+
             var thread = Thread(Runnable {
                 try {
                     while (true) {
-                        onSecond(endTime);
+                        if(isTimerActive) {
+                            onSecond(endTime);
+                        }
                         Thread.sleep(pulseMs);
-                        if (System.currentTimeMillis() >= endTime) {
+                        if (isTimerActive && System.currentTimeMillis() >= endTime) {
                             onTimerEnd()
-                            break
                         }
                     }
                 } catch (_: InterruptedException) {
                 }
             });
             thread.start();
-            return thread
+            TimerUtilities.thread=thread;
         }
     }
 }

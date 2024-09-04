@@ -1,5 +1,6 @@
 package com.example.focus
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
@@ -35,28 +36,37 @@ class FirstFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         println("onViewCreated called")
+        this.activity?.startForegroundService(
+            Intent(
+                this.activity,
+                TimerService::class.java
+            )
+        );
+
         binding.settings.setOnClickListener {
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
         }
         timeoutHandler=TimeoutHandler(this.context)
 
         binding.start.setOnClickListener {
-            if(TimerUtilities.isThreadAlive()){
-                TimerUtilities.shutDownThread();
+            if(TimerUtilities.isTimerActive){
+                TimerUtilities.pauseTimer()
+                TimerUtilities.isTimerActive=false
                 TimerService.pomodoroTimeSeconds = Constants.pomodoroTimeSeconds
                 TimerService.breakTimeSeconds = Constants.breakTimeSeconds
             }
             else{
-                startThread()
+                TimerUtilities.startTimer(TimerService.timeRemainingMs+System.currentTimeMillis())
             }
             updateUx()
         }
         binding.stop.setOnClickListener {
-            TimerUtilities.shutDownThread();
+            TimerUtilities.resetTimer();
             TimerService.pomodoroTimeSeconds = Constants.pomodoroTimeSeconds
             TimerService.timeRemainingMs = TimerService.pomodoroTimeSeconds*1000;
             TimerService.isBreakPeriod = false
             TimerService.breakTimeSeconds = Constants.breakTimeSeconds
+            TimerUtilities.isTimerActive=false
             updateUx();
         }
         handler = Handler(Looper.getMainLooper());
@@ -66,29 +76,6 @@ class FirstFragment : Fragment() {
     fun onUxPulse() {
         updateUx();
         handler?.postDelayed(runnable!!,Constants.uiUpdatePeriodMs);
-    }
-
-    public fun startThread(){
-        startTime=System.currentTimeMillis();
-        TimerUtilities.thread = TimerUtilities.startTimer(System.currentTimeMillis()+ TimerService.timeRemainingMs,fun (endTime:Long){onSecond(endTime)},fun (){
-            onTimerEnd()
-        })
-    }
-
-    fun onSecond(endTime:Long){
-        TimerService.timeRemainingMs = Math.max(0,endTime-System.currentTimeMillis())
-    }
-
-    fun onTimerEnd(){
-        startTime=System.currentTimeMillis()
-        TimerService.isBreakPeriod = !TimerService.isBreakPeriod;
-        if (TimerService.isBreakPeriod) {
-            TimerService.timeRemainingMs = TimerService.breakTimeSeconds * 1000
-        }
-        else
-            TimerService.timeRemainingMs = TimerService.pomodoroTimeSeconds *1000
-        TimerUtilities.thread =TimerUtilities.startTimer(TimerService.timeRemainingMs +startTime,fun (endTime:Long){onSecond(endTime)},fun (){onTimerEnd()})
-        timeoutHandler.recordSensorsAndPlay()
     }
 
     override fun onResume() {
@@ -106,7 +93,7 @@ class FirstFragment : Fragment() {
 
     fun updateUx(){
         binding.timer.setText(Utilities.formatTimeFromSeconds(TimerService.timeRemainingMs/1000));
-        if(TimerUtilities.isThreadAlive())
+        if(TimerUtilities.isTimerActive)
             binding.start.setImageResource(R.mipmap.pause_icon)
         else
             binding.start.setImageResource(R.mipmap.play_icon)
