@@ -12,8 +12,8 @@ class Utilities {
             return (if (minutes<10) "0".plus(minutes) else minutes.toString()).plus(" : ").plus(if (seconds<10) "0".plus(seconds) else seconds.toString());
         }
 
-        public fun isInsidePocket(orientation: FloatArray,lightSensorReading: Float,proximitySensorReading: Float):Boolean{
-            val res=isSomethingCoveringScreen(lightSensorReading,proximitySensorReading)
+        public fun isInsidePocket(orientation: FloatArray,lightSensorReading: Float):Boolean{
+            val res=isSomethingCoveringScreen(lightSensorReading)
 //            println("isInsidePocket: "+res);
             return res;
         }
@@ -56,8 +56,8 @@ class Utilities {
             return res
         }
 
-        public fun isSomethingCoveringScreen(lightSensorReading:Float, proximitySensorReading:Float):Boolean{
-            val res=isDark(lightSensorReading) && isSomethingInProximity(proximitySensorReading)
+        public fun isSomethingCoveringScreen(lightSensorReading:Float):Boolean{
+            val res=isDark(lightSensorReading)
 //            println("isSomethingCoveringScreen: "+res);
             return res;
         }

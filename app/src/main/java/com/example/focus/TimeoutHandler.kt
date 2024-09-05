@@ -26,9 +26,7 @@ class TimeoutHandler: SensorEventListener {
     private var accelerometer: Sensor
     private var magnetometer: Sensor
     private var lightSensor: Sensor
-    private var proxitySensor: Sensor
     private var combinedVibrationEffect: CombinedVibration
-    private var proximitySensorReading: Float = 0.0F;
     private var lightSensorReading: Float = 0.0F;
     private var accelerometerReading: FloatArray=FloatArray(3)
     private var magnetometerReading: FloatArray= FloatArray(3)
@@ -36,7 +34,6 @@ class TimeoutHandler: SensorEventListener {
     private var accelerometerReadingDone:Boolean=false;
     private var magnetometerReadingDone:Boolean=false;
     private var lightSensorReadingDone:Boolean=false;
-    private var proximitySensorReadingDone:Boolean=false;
     private var loudTunes=arrayOf(R.raw.sound_notif2_132674, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_connect,R.raw.halo_canticles, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
     private var context:Context?
     constructor(context:Context?){
@@ -50,7 +47,6 @@ class TimeoutHandler: SensorEventListener {
         sensorManager = context?.getSystemService(Service.SENSOR_SERVICE) as SensorManager;
         accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) as Sensor;
         magnetometer = sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) as Sensor;
-        proxitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_PROXIMITY) as Sensor;
         lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
     }
     public fun recordSensorsAndPlay(){
@@ -61,8 +57,7 @@ class TimeoutHandler: SensorEventListener {
         vibrator.cancel()
         if(Utilities.isInsidePocket(
                 orientation,
-                lightSensorReading,
-                proximitySensorReading
+                lightSensorReading
             )|| Utilities.isFacingDown(
                 orientation
             )||!keyguardManager.isKeyguardLocked) {
@@ -82,15 +77,13 @@ class TimeoutHandler: SensorEventListener {
         accelerometerReadingDone=false;
         magnetometerReadingDone=false;
         lightSensorReadingDone=false;
-        proximitySensorReadingDone=false;
-        while(!accelerometerReadingDone||!magnetometerReadingDone||!lightSensorReadingDone||!proximitySensorReadingDone){
+        while(!accelerometerReadingDone||!magnetometerReadingDone||!lightSensorReadingDone){
             if(System.currentTimeMillis()-start> Constants.breakTimeSeconds*1000)
                 break;
             sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorManager?.registerListener(this, proxitySensor, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            println(""+accelerometerReadingDone+" "+magnetometerReadingDone+" "+lightSensorReadingDone+" "+proximitySensorReadingDone)
+            println(""+accelerometerReadingDone+" "+magnetometerReadingDone+" "+lightSensorReadingDone)
         }
         sensorManager.unregisterListener(this);
     }
@@ -114,10 +107,6 @@ class TimeoutHandler: SensorEventListener {
         if(event?.sensor?.type==Sensor.TYPE_MAGNETIC_FIELD) {
             magnetometerReading = event.values
             magnetometerReadingDone=true
-        }
-        if(event?.sensor?.type==Sensor.TYPE_PROXIMITY) {
-            proximitySensorReading =event.values.get(0);
-            proximitySensorReadingDone=true
         }
         if(event?.sensor?.type==Sensor.TYPE_LIGHT) {
             lightSensorReading =event.values.get(0);
