@@ -34,7 +34,7 @@ class TimeoutHandler: SensorEventListener {
     private var accelerometerReadingDone:Boolean=false;
     private var magnetometerReadingDone:Boolean=false;
     private var lightSensorReadingDone:Boolean=false;
-    private var loudTunes=arrayOf(R.raw.sound_notif2_132674, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_connect,R.raw.halo_canticles, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
+    private var loudTunes=arrayOf(R.raw.sound_notif2_132674, R.raw.crystal_peak_pomodoro_tune, R.raw.set_a_fire_in_your_heart_pomodoro_tune, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_connect, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
     private var context:Context?
     constructor(context:Context?){
         this.context=context
