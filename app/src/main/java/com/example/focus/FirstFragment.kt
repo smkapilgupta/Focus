@@ -50,7 +50,7 @@ class FirstFragment : Fragment() {
 
         binding.start.setOnClickListener {
             if(TimerUtilities.isTimerActive){
-                TimerUtilities.pauseTimer()
+                TimerService.timeRemainingMs=TimerUtilities.pauseTimer()
                 TimerUtilities.isTimerActive=false
                 TimerService.pomodoroTimeSeconds = Constants.pomodoroTimeSeconds
                 TimerService.breakTimeSeconds = Constants.breakTimeSeconds

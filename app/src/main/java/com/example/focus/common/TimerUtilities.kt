@@ -8,8 +8,9 @@ class TimerUtilities {
         var isTimerActive:Boolean=false
         private var endTime:Long=0;
 
-        fun pauseTimer(){
+        fun pauseTimer():Long{
             isTimerActive=false
+            return endTime-System.currentTimeMillis()
         }
 
         fun resetTimer(){
