@@ -36,12 +36,14 @@ class FirstFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         println("onViewCreated called")
-        this.activity?.startForegroundService(
-            Intent(
-                this.activity,
-                TimerService::class.java
-            )
-        );
+        if(!TimerService.isServiceActive) {
+            this.activity?.startForegroundService(
+                Intent(
+                    this.activity,
+                    TimerService::class.java
+                )
+            );
+        }
 
         binding.settings.setOnClickListener {
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)

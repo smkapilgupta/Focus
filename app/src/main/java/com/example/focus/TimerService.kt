@@ -18,10 +18,12 @@ class TimerService: Service() {
         public var breakTimeSeconds= Constants.breakTimeSeconds;
         public var isBreakPeriod=false;
         public var timeRemainingMs:Long=Constants.pomodoroTimeSeconds*1000;
+        public var isServiceActive=false;
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         println("onStartCommand called")
+        isServiceActive=true
         createNotificationChannel();
         timeoutHandler=TimeoutHandler(this)
         this.startId=startId
@@ -34,6 +36,7 @@ class TimerService: Service() {
     override fun onDestroy() {
         println("onDestroy called")
         super.onDestroy()
+        isServiceActive=false
     }
 
     override fun onBind(intent: Intent): IBinder? {

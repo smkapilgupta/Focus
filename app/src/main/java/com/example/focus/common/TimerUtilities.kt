@@ -24,6 +24,9 @@ class TimerUtilities {
         }
 
         fun initializeTimer(onSecond: (endTime:Long) -> Unit, onTimerEnd: () -> Unit) {
+            if(TimerUtilities.thread?.isAlive()==true){
+                return
+            }
             endTime=System.currentTimeMillis()*2
 
             var thread = Thread(Runnable {
