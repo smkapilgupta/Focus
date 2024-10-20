@@ -52,7 +52,6 @@ class TimeoutHandler: SensorEventListener {
     public fun recordSensorsAndPlay(){
         var start=System.currentTimeMillis();
         recordSensors()
-        recordSensors()
         sensorRecordingTime=System.currentTimeMillis()-start;
         vibrator.cancel()
         if(Utilities.isInsidePocket(
@@ -78,8 +77,10 @@ class TimeoutHandler: SensorEventListener {
         magnetometerReadingDone=false;
         lightSensorReadingDone=false;
         while(!accelerometerReadingDone||!magnetometerReadingDone||!lightSensorReadingDone){
-            if(System.currentTimeMillis()-start> Constants.breakTimeSeconds*1000)
+            if(System.currentTimeMillis()-start> Constants.breakTimeSeconds*1000/2) {
+                lightSensorReading=0.0f;
                 break;
+            }
             sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
