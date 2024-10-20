@@ -6,6 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
+import com.example.focus.common.Constants
+import com.example.focus.common.TimerUtilities
 import com.example.focus.databinding.FragmentSecondBinding
 
 /**
@@ -15,8 +17,6 @@ class SecondFragment : Fragment() {
 
     private var _binding: FragmentSecondBinding? = null
 
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -31,6 +31,9 @@ class SecondFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.shutdown.setOnClickListener {
+            System.exit(0)
+        }
 
     }
 

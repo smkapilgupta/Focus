@@ -21,7 +21,7 @@ class TimerService: Service() {
         public var isServiceActive=false;
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         println("onStartCommand called")
         isServiceActive=true
         createNotificationChannel();

@@ -61,6 +61,17 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/shutdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:src="@mipmap/shutdown"
+            tools:layout_editor_absoluteY="675dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/floatingActionButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -71,6 +82,7 @@
             android:layout_alignParentBottom="true"
             android:layout_alignParentEnd="true"
             />
+
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
