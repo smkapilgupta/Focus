@@ -69,6 +69,13 @@ class TimeoutHandler: SensorEventListener {
         }
     }
 
+    public fun simplyPlay(){
+        vibrator.cancel()
+        var mediaLoud: MediaPlayer= MediaPlayer.create(context, R.raw.saoirse_device_connect);
+        startPlayer(mediaLoud);
+        vibrator.vibrate(combinedVibrationEffect)
+    }
+
     fun recordSensors(){
         val start=System.currentTimeMillis()
         accelerometerReadingDone=false;

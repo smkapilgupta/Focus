@@ -49,6 +49,7 @@ class TimerService: Service() {
     }
 
     fun onTimerEnd(){
+        startForeground(this.startId,createNotification("Timer ended"))
         startTime=System.currentTimeMillis()
         isBreakPeriod = !isBreakPeriod;
         if (isBreakPeriod) {
@@ -57,11 +58,18 @@ class TimerService: Service() {
         else
             timeRemainingMs = pomodoroTimeSeconds *1000
         TimerUtilities.startTimer(System.currentTimeMillis()+ timeRemainingMs)
-        Thread({
-            var start=System.currentTimeMillis()
-            timeoutHandler.recordSensorsAndPlay()
-            startForeground(this.startId,createNotification("Sensor delay: "+formatTimeFromSeconds((System.currentTimeMillis()-start)/1000)))
-        }).start()
+        val thread=Thread({timeoutHandler.recordSensorsAndPlay()})
+        thread.start()
+        val start=System.currentTimeMillis()
+        while(true){
+            if(!thread.isAlive)
+                break;
+            if(thread.isAlive&&(System.currentTimeMillis()-start)>120000){
+                thread.interrupt()
+                timeoutHandler.simplyPlay()
+                break
+            }
+        }
     }
 
     fun createNotificationChannel(){
