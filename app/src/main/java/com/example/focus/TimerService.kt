@@ -8,6 +8,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.example.focus.common.Constants
 import com.example.focus.common.TimerUtilities
+import com.example.focus.common.Utilities.Companion.formatTimeFromSeconds
 
 class TimerService: Service() {
     private lateinit var timeoutHandler:TimeoutHandler
@@ -56,7 +57,11 @@ class TimerService: Service() {
         else
             timeRemainingMs = pomodoroTimeSeconds *1000
         TimerUtilities.startTimer(System.currentTimeMillis()+ timeRemainingMs)
-        Thread({timeoutHandler.recordSensorsAndPlay()}).start()
+        Thread({
+            var start=System.currentTimeMillis()
+            timeoutHandler.recordSensorsAndPlay()
+            startForeground(this.startId,createNotification("Sensor delay: "+formatTimeFromSeconds((System.currentTimeMillis()-start)/1000)))
+        }).start()
     }
 
     fun createNotificationChannel(){

@@ -22,7 +22,6 @@ class TimeoutHandler: SensorEventListener {
     private var vibrator: VibratorManager
     private var sensorManager: SensorManager
     private var keyguardManager: KeyguardManager
-    private var sensorRecordingTime: Long=0
     private var accelerometer: Sensor
     private var magnetometer: Sensor
     private var lightSensor: Sensor
@@ -51,9 +50,7 @@ class TimeoutHandler: SensorEventListener {
         lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
     }
     public fun recordSensorsAndPlay(){
-        var start=System.currentTimeMillis();
         recordSensors()
-        sensorRecordingTime=System.currentTimeMillis()-start;
         vibrator.cancel()
         if(Utilities.isInsidePocket(
                 orientation,
