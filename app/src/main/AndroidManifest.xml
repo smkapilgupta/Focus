@@ -35,11 +35,6 @@
             </intent-filter>
         </activity>
         <receiver android:name=".AlarmReceiver"/>
-        <service
-            android:name=".TimerService"
-            android:foregroundServiceType="mediaPlayback"
-            android:exported="false"
-            />
     </application>
 
 </manifest>
