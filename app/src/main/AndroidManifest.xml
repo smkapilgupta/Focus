@@ -11,6 +11,7 @@
     <uses-feature android:name="android.hardware.sensor.gyroscope" />
     <uses-feature android:name="android.hardware.sensor.proximity" />
     <uses-feature android:name="android.hardware.sensor.compass" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -33,6 +34,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <receiver android:name=".AlarmReceiver"/>
         <service
             android:name=".TimerService"
             android:foregroundServiceType="mediaPlayback"

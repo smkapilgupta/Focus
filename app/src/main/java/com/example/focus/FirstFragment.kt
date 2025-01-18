@@ -11,7 +11,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
 import com.example.focus.common.Constants
-import com.example.focus.common.TimerUtilities
 import com.example.focus.common.Utilities
 import com.example.focus.databinding.FragmentFirstBinding
 
@@ -22,7 +21,7 @@ class FirstFragment : Fragment() {
     private lateinit var runnable: Runnable
     private lateinit var timeoutHandler:TimeoutHandler
     private val binding get() = _binding!!
-    private var startTime:Long=0;
+    private lateinit var alarmManger:AlarmManger
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -36,14 +35,7 @@ class FirstFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         println("onViewCreated called")
-        if(!TimerService.isServiceActive) {
-            this.activity?.startForegroundService(
-                Intent(
-                    this.activity,
-                    TimerService::class.java
-                )
-            );
-        }
+        alarmManger= AlarmManger(this.requireContext())
 
         binding.settings.setOnClickListener {
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
@@ -51,24 +43,16 @@ class FirstFragment : Fragment() {
         timeoutHandler=TimeoutHandler(this.context)
 
         binding.start.setOnClickListener {
-            if(TimerUtilities.isTimerActive){
-                TimerService.timeRemainingMs=TimerUtilities.pauseTimer()
-                TimerUtilities.isTimerActive=false
-                TimerService.pomodoroTimeSeconds = Constants.pomodoroTimeSeconds
-                TimerService.breakTimeSeconds = Constants.breakTimeSeconds
+            if(AlarmManger.isTimerActive){
+                alarmManger.pause()
             }
             else{
-                TimerUtilities.startTimer(TimerService.timeRemainingMs+System.currentTimeMillis())
+                alarmManger.start(AlarmManger.timeRemainingMs+System.currentTimeMillis())
             }
             updateUx()
         }
         binding.stop.setOnClickListener {
-            TimerUtilities.resetTimer();
-            TimerService.pomodoroTimeSeconds = Constants.pomodoroTimeSeconds
-            TimerService.timeRemainingMs = TimerService.pomodoroTimeSeconds*1000;
-            TimerService.isBreakPeriod = false
-            TimerService.breakTimeSeconds = Constants.breakTimeSeconds
-            TimerUtilities.isTimerActive=false
+            alarmManger.stop();
             updateUx();
         }
         handler = Handler(Looper.getMainLooper());
@@ -94,12 +78,16 @@ class FirstFragment : Fragment() {
     }
 
     fun updateUx(){
-        binding.timer.setText(Utilities.formatTimeFromSeconds(TimerService.timeRemainingMs/1000));
-        if(TimerUtilities.isTimerActive)
+        if(AlarmManger.isTimerActive)
+            binding.timer.setText(Utilities.formatTimeFromSeconds((AlarmManger.endTime-System.currentTimeMillis())/1000));
+        else
+            binding.timer.setText(Utilities.formatTimeFromSeconds(AlarmManger.timeRemainingMs/1000));
+
+        if(AlarmManger.isTimerActive)
             binding.start.setImageResource(R.mipmap.pause_icon)
         else
             binding.start.setImageResource(R.mipmap.play_icon)
-        if(TimerService.isBreakPeriod){
+        if(AlarmManger.isBreakPeriod){
             binding.timer.setTextColor(Color.parseColor("#0f6bf5"));
         }else{
             binding.timer.setTextColor(Color.parseColor("#8647C9"));

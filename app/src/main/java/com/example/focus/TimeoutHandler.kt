@@ -49,7 +49,7 @@ class TimeoutHandler: SensorEventListener {
         magnetometer = sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) as Sensor;
         lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
     }
-    public fun recordSensorsAndPlay(){
+    private fun recordSensorsAndPlay(){
         recordSensors()
         vibrator.cancel()
         if(Utilities.isInsidePocket(
@@ -69,23 +69,40 @@ class TimeoutHandler: SensorEventListener {
         }
     }
 
-    public fun simplyPlay(){
+    /**
+     * play a simple tune if unable to read sensors for long
+     */
+    public fun safePlay(){
+        val thread=Thread({recordSensorsAndPlay()})
+        thread.start()
+        val start=System.currentTimeMillis()
+        Thread({
+            while (true) {
+                if (!thread.isAlive)
+                    break;
+                if (thread.isAlive && (System.currentTimeMillis() - start) > 30000) {
+                    thread.interrupt()
+                    simplyPlay()
+                    break
+                }
+            }
+        }).start()
+
+    }
+
+    private fun simplyPlay(){
         vibrator.cancel()
         var mediaLoud: MediaPlayer= MediaPlayer.create(context, R.raw.saoirse_device_connect);
         startPlayer(mediaLoud);
         vibrator.vibrate(combinedVibrationEffect)
     }
 
-    fun recordSensors(){
+    private fun recordSensors(){
         val start=System.currentTimeMillis()
         accelerometerReadingDone=false;
         magnetometerReadingDone=false;
         lightSensorReadingDone=false;
         while(!accelerometerReadingDone||!magnetometerReadingDone||!lightSensorReadingDone){
-            if(System.currentTimeMillis()-start> Constants.breakTimeSeconds*1000/2) {
-                lightSensorReading=0.0f;
-                break;
-            }
             sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager?.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);

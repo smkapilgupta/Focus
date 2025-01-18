@@ -1,14 +1,17 @@
 package com.example.focus
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.example.focus.common.Constants
+import com.example.focus.common.Constants.Companion.INTENT_CODE
 import com.example.focus.common.TimerUtilities
-import com.example.focus.common.Utilities.Companion.formatTimeFromSeconds
 
 class TimerService: Service() {
     private lateinit var timeoutHandler:TimeoutHandler
@@ -18,7 +21,6 @@ class TimerService: Service() {
         public var pomodoroTimeSeconds = Constants.pomodoroTimeSeconds;
         public var breakTimeSeconds= Constants.breakTimeSeconds;
         public var isBreakPeriod=false;
-        public var timeRemainingMs:Long=Constants.pomodoroTimeSeconds*1000;
         public var isServiceActive=false;
     }
 
@@ -29,7 +31,13 @@ class TimerService: Service() {
         timeoutHandler=TimeoutHandler(this)
         this.startId=startId
         startTime=System.currentTimeMillis();
-        TimerUtilities.initializeTimer(fun (endTime:Long){onSecond(endTime)},fun (){ onTimerEnd() })
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            INTENT_CODE,
+            Intent(this, AlarmReceiver::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         startForeground(startId, createNotification(""));
         return START_STICKY
     }
@@ -44,32 +52,17 @@ class TimerService: Service() {
         return null
     }
 
-    fun onSecond(endTime:Long){
-        timeRemainingMs = Math.max(0,endTime-System.currentTimeMillis())
-    }
-
-    fun onTimerEnd(){
+    public fun onTimerEnd(){
         startForeground(this.startId,createNotification("Timer ended"))
         startTime=System.currentTimeMillis()
         isBreakPeriod = !isBreakPeriod;
         if (isBreakPeriod) {
-            timeRemainingMs = breakTimeSeconds * 1000
+            TimerUtilities.startTimer(System.currentTimeMillis()+ breakTimeSeconds * 1000)
         }
         else
-            timeRemainingMs = pomodoroTimeSeconds *1000
-        TimerUtilities.startTimer(System.currentTimeMillis()+ timeRemainingMs)
-        val thread=Thread({timeoutHandler.recordSensorsAndPlay()})
-        thread.start()
-        val start=System.currentTimeMillis()
-        while(true){
-            if(!thread.isAlive)
-                break;
-            if(thread.isAlive&&(System.currentTimeMillis()-start)>120000){
-                thread.interrupt()
-                timeoutHandler.simplyPlay()
-                break
-            }
-        }
+            TimerUtilities.startTimer(System.currentTimeMillis()+ pomodoroTimeSeconds *1000)
+
+        timeoutHandler.safePlay()
     }
 
     fun createNotificationChannel(){
