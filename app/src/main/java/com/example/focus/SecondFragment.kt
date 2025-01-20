@@ -31,7 +31,7 @@ class SecondFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.shutdown.setOnClickListener {
-            System.exit(0)
+            AlarmManger(this.requireContext()).stop()
         }
 
     }
