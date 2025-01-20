@@ -33,7 +33,7 @@ class AlarmManger (private val context: Context) {
 
     fun stop(){
         alarmManager.cancel(pendingIntent)
-        timeRemainingMs= pomodoroTimeSeconds
+        timeRemainingMs= pomodoroTimeSeconds*1000
         isBreakPeriod=false
         isTimerActive=false
     }
