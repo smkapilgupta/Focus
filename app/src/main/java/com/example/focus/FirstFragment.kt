@@ -36,6 +36,15 @@ class FirstFragment : Fragment() {
         println("onViewCreated called")
         alarmManger= AlarmManger(this.requireContext())
 
+        if(!TimerService.isServiceActive) {
+            this.activity?.startForegroundService(
+                Intent(
+                    this.activity,
+                    TimerService::class.java
+                )
+            );
+        }
+
         binding.settings.setOnClickListener {
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
         }
