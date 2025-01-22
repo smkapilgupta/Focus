@@ -19,7 +19,6 @@ class FirstFragment : Fragment() {
     private var _binding: FragmentFirstBinding? = null
     private var handler: Handler? = null
     private lateinit var runnable: Runnable
-    private lateinit var timeoutHandler:TimeoutHandler
     private val binding get() = _binding!!
     private lateinit var alarmManger:AlarmManger
 
@@ -40,7 +39,6 @@ class FirstFragment : Fragment() {
         binding.settings.setOnClickListener {
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
         }
-        timeoutHandler=TimeoutHandler(this.context)
 
         binding.start.setOnClickListener {
             if(AlarmManger.isTimerActive){

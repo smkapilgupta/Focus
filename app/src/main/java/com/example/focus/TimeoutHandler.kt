@@ -80,7 +80,7 @@ class TimeoutHandler: SensorEventListener {
             while (true) {
                 if (!thread.isAlive)
                     break;
-                if (thread.isAlive && (System.currentTimeMillis() - start) > 30000) {
+                if (thread.isAlive && (System.currentTimeMillis() - start) > 60000) {
                     thread.interrupt()
                     simplyPlay()
                     break
