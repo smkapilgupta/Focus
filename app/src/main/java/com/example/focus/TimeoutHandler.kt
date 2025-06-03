@@ -33,7 +33,7 @@ class TimeoutHandler: SensorEventListener {
     private var accelerometerReadingDone:Boolean=false;
     private var magnetometerReadingDone:Boolean=false;
     private var lightSensorReadingDone:Boolean=false;
-    private var loudTunesBatch2=arrayOf(R.raw.the_flute_of_shri_krishna_pomodoro_tune, R.raw.crystal_peak_pomodoro_tune, R.raw.the_weapon_pomodoro_tune, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_connect, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
+    private var loudTunesBatch2=arrayOf(R.raw.the_flute_of_shri_krishna_pomodoro_tune, R.raw.crystal_peak_pomodoro_tune, R.raw.the_weapon_pomodoro_tune, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
     private var loudTunesBatch1=arrayOf(R.raw.a_single_drop_of_magic_pomodoro_tune, R.raw.one_one_seven_pomodoro_tune, R.raw.power_of_innoscence_pomodoro_tune, R.raw.reapers_coast_pomodoro_tune_2, R.raw.reapers_coast_pomodoro_tune_3, R.raw.reapers_coast_pomodoro_tune_4, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune_2, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune_3,R.raw.sebilles_theme_pomodoro_tune)
     private var context:Context?
     constructor(context:Context?){
@@ -63,7 +63,7 @@ class TimeoutHandler: SensorEventListener {
             startPlayer(mediaQuite);
         }
         else {
-            var mediaLoud: MediaPlayer= MediaPlayer.create(context, loudTunesBatch1[(generateRandomNumber(0,loudTunesBatch1.size.toLong()-1)%loudTunesBatch1.size).toInt()]);
+            var mediaLoud: MediaPlayer= MediaPlayer.create(context, loudTunesBatch2[(generateRandomNumber(0,loudTunesBatch1.size.toLong()-1)%loudTunesBatch1.size).toInt()]);
             startPlayer(mediaLoud);
             vibrator.vibrate(combinedVibrationEffect)
         }
@@ -73,6 +73,10 @@ class TimeoutHandler: SensorEventListener {
      * play a simple tune if unable to read sensors for long
      */
     public fun safePlay(){
+        //Starting music as it forces the device to wake up from sleep
+        var media: MediaPlayer= MediaPlayer.create(context, R.raw.silent_pomodoro_tune);
+        startPlayer(media);
+
         val thread=Thread({recordSensorsAndPlay()})
         thread.start()
         val start=System.currentTimeMillis()

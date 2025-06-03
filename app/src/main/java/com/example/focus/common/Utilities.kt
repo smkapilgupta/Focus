@@ -70,10 +70,11 @@ class Utilities {
         var lastRN:Long=0;
         fun generateRandomNumber(rangeStart:Long,rangeEnd:Long):Long{
             var uuid= UUID.randomUUID().toString()
-            var sumOfChars=0;
+            var sumOfChars=0L;
             for(i:Int in 0..uuid.length-1){
                 sumOfChars+=uuid.get(i).code
             }
+            sumOfChars+=System.currentTimeMillis();
             var newRN:Long= rangeStart+(lastRN+sumOfChars)%(rangeEnd-rangeStart+1)
             if(newRN == lastRN)
                 newRN=rangeStart+(lastRN+sumOfChars+1)%(rangeEnd-rangeStart+1)
