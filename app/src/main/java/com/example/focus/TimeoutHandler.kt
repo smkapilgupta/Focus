@@ -35,8 +35,10 @@ class TimeoutHandler: SensorEventListener {
     private var accelerometerReadingDone:Boolean=false;
     private var magnetometerReadingDone:Boolean=false;
     private var lightSensorReadingDone:Boolean=false;
-    private var loudTunesBatch2=arrayOf(R.raw.the_flute_of_shri_krishna_pomodoro_tune, R.raw.crystal_peak_pomodoro_tune, R.raw.the_weapon_pomodoro_tune, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
     private var loudTunesBatch1=arrayOf(R.raw.a_single_drop_of_magic_pomodoro_tune, R.raw.one_one_seven_pomodoro_tune, R.raw.power_of_innoscence_pomodoro_tune, R.raw.reapers_coast_pomodoro_tune_2, R.raw.reapers_coast_pomodoro_tune_3, R.raw.reapers_coast_pomodoro_tune_4, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune_2, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune_3,R.raw.sebilles_theme_pomodoro_tune)
+    private var loudTunesBatch2=arrayOf(R.raw.the_flute_of_shri_krishna_pomodoro_tune, R.raw.crystal_peak_pomodoro_tune, R.raw.the_weapon_pomodoro_tune, R.raw.your_tale_awaits_you_down_the_road_pomodoro_tune, R.raw.saoirse_notification, R.raw.saoirse_device_disconnect, R.raw.shadow_of_mordor,R.raw.reapers_coast_pomodoro_tune)
+    private var loudTunesBatch3=arrayOf(R.raw.esquies_nest_francois_pomodoro_tune, R.raw.flying_waters_electric_tides_pomodoro_tune, R.raw.flying_waters_electric_tides_pomodoro_tune2, R.raw.flying_waters_electric_tides_pomodoro_tune3, R.raw.flying_waters_electric_tides_pomodoro_tune3, R.raw.flying_waters_electric_tides_pomodoro_tune4, R.raw.gustave_pomodoro_tune,R.raw.gustave_pomodoro_tune2,R.raw.gustave_pomodoro_tune3,R.raw.gustave_pomodoro_tune4,R.raw.start_a_cult_pomodoro_tune,R.raw.the_call_pomodoro_tune)
+
     private var context:Context?
     constructor(context:Context?){
         this.context=context
@@ -68,7 +70,8 @@ class TimeoutHandler: SensorEventListener {
         }
         else {
             var tunesBatch:Array<Int>
-            if (monthNumber%2==0) tunesBatch=loudTunesBatch2
+            if (monthNumber%3==0) tunesBatch=loudTunesBatch2
+            else if(monthNumber%3==1) tunesBatch=loudTunesBatch3
             else tunesBatch=loudTunesBatch1
 
             var mediaLoud: MediaPlayer= MediaPlayer.create(context, tunesBatch[(generateRandomNumber(0,loudTunesBatch1.size.toLong()-1)%loudTunesBatch1.size).toInt()]);
