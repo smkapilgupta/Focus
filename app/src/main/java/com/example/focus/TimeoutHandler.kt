@@ -16,6 +16,8 @@ import android.os.VibratorManager
 import com.example.focus.common.Constants
 import com.example.focus.common.Utilities
 import com.example.focus.common.Utilities.Companion.generateRandomNumber
+import java.time.LocalDate
+import java.util.Date
 
 class TimeoutHandler: SensorEventListener {
     private var mediaQuite: MediaPlayer
@@ -50,6 +52,8 @@ class TimeoutHandler: SensorEventListener {
         lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT) as Sensor;
     }
     private fun recordSensorsAndPlay(){
+        var monthNumber= LocalDate.now().monthValue
+
         recordSensors()
         vibrator.cancel()
         if(Utilities.isInsidePocket(
@@ -63,7 +67,11 @@ class TimeoutHandler: SensorEventListener {
             startPlayer(mediaQuite);
         }
         else {
-            var mediaLoud: MediaPlayer= MediaPlayer.create(context, loudTunesBatch2[(generateRandomNumber(0,loudTunesBatch1.size.toLong()-1)%loudTunesBatch1.size).toInt()]);
+            var tunesBatch:Array<Int>
+            if (monthNumber%2==0) tunesBatch=loudTunesBatch2
+            else tunesBatch=loudTunesBatch1
+
+            var mediaLoud: MediaPlayer= MediaPlayer.create(context, tunesBatch[(generateRandomNumber(0,loudTunesBatch1.size.toLong()-1)%loudTunesBatch1.size).toInt()]);
             startPlayer(mediaLoud);
             vibrator.vibrate(combinedVibrationEffect)
         }
